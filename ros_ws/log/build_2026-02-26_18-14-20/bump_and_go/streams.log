@@ -1,0 +1,12 @@
+[0.010s] Invoking command in '/Adaptive_Behavior_Trees/ros_ws/build/bump_and_go': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/humble /usr/bin/cmake --build /Adaptive_Behavior_Trees/ros_ws/build/bump_and_go -- -j16 -l16
+[0.047s] [35m[1mConsolidate compiler generated dependencies of target bg_forward_node[0m
+[0.062s] [ 25%] [32mBuilding CXX object CMakeFiles/bumpgo.dir/src/bump_and_go.cpp.o[0m
+[0.065s] [ 75%] Built target bg_forward_node
+[0.288s] [01m[K/Adaptive_Behavior_Trees/ros_ws/src/bump_and_go/src/bump_and_go.cpp:7:10:[m[K [01;31m[Kfatal error: [m[Kbehaviortree_cpp/sequence_node.h: No such file or directory
+[0.288s]     7 | #include [01;31m[K"behaviortree_cpp/sequence_node.h"[m[K
+[0.288s]       |          [01;31m[K^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[m[K
+[0.288s] compilation terminated.
+[0.297s] gmake[2]: *** [CMakeFiles/bumpgo.dir/build.make:76: CMakeFiles/bumpgo.dir/src/bump_and_go.cpp.o] Error 1
+[0.297s] gmake[1]: *** [CMakeFiles/Makefile2:165: CMakeFiles/bumpgo.dir/all] Error 2
+[0.298s] gmake: *** [Makefile:146: all] Error 2
+[0.300s] Invoked command in '/Adaptive_Behavior_Trees/ros_ws/build/bump_and_go' returned '2': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/humble /usr/bin/cmake --build /Adaptive_Behavior_Trees/ros_ws/build/bump_and_go -- -j16 -l16

@@ -1,0 +1,35 @@
+[35m[1mConsolidate compiler generated dependencies of target bg_forward_node[0m
+[35m[1mConsolidate compiler generated dependencies of target bumpgo[0m
+[ 25%] [32mBuilding CXX object CMakeFiles/bg_forward_node.dir/src/ControlNodes/Forward.cpp.o[0m
+[ 75%] Built target bumpgo
+[01m[K/Adaptive_Behavior_Trees/ros_ws/src/bump_and_go/src/ControlNodes/Forward.cpp:[m[K In function ‘[01m[Kvoid BT_RegisterNodesFromPlugin(BT::BehaviorTreeFactory&)[m[K’:
+[01m[K/Adaptive_Behavior_Trees/ros_ws/src/bump_and_go/src/ControlNodes/Forward.cpp:41:30:[m[K [01;31m[Kerror: [m[K‘[01m[Kbr2_bt_bumpgo[m[K’ was not declared in this scope
+   41 |     factory.registerNodeType<[01;31m[Kbr2_bt_bumpgo[m[K::Forward>("Forward");
+      |                              [01;31m[K^~~~~~~~~~~~~[m[K
+[01m[K/Adaptive_Behavior_Trees/ros_ws/src/bump_and_go/src/ControlNodes/Forward.cpp:41:13:[m[K [01;31m[Kerror: [m[Kparse error in template argument list
+   41 |     factory.[01;31m[KregisterNodeType<br2_bt_bumpgo::Forward>[m[K("Forward");
+      |             [01;31m[K^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[m[K
+[01m[K/Adaptive_Behavior_Trees/ros_ws/src/bump_and_go/src/ControlNodes/Forward.cpp:41:53:[m[K [01;31m[Kerror: [m[Kno matching function for call to ‘[01m[KBT::BehaviorTreeFactory::registerNodeType<<expression error> >(const char [8])[m[K’
+   41 |     [01;31m[Kfactory.registerNodeType<br2_bt_bumpgo::Forward>("Forward")[m[K;
+      |     [01;31m[K~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~[m[K
+In file included from [01m[K/Adaptive_Behavior_Trees/ros_ws/src/bump_and_go/include/bump_and_go/Forward.hpp:7[m[K,
+                 from [01m[K/Adaptive_Behavior_Trees/ros_ws/src/bump_and_go/src/ControlNodes/Forward.cpp:4[m[K:
+[01m[K/opt/ros/humble/include/behaviortree_cpp/bt_factory.h:342:8:[m[K [01;36m[Knote: [m[Kcandidate: ‘[01m[Ktemplate<class T, class ... ExtraArgs> void BT::BehaviorTreeFactory::registerNodeType(const string&, const PortsList&, ExtraArgs ...)[m[K’
+  342 |   void [01;36m[KregisterNodeType[m[K(const std::string& ID, const PortsList& ports, ExtraArgs... args)
+      |        [01;36m[K^~~~~~~~~~~~~~~~[m[K
+[01m[K/opt/ros/humble/include/behaviortree_cpp/bt_factory.h:342:8:[m[K [01;36m[Knote: [m[K  template argument deduction/substitution failed:
+[01m[K/Adaptive_Behavior_Trees/ros_ws/src/bump_and_go/src/ControlNodes/Forward.cpp:41:53:[m[K [01;31m[Kerror: [m[Ktemplate argument 1 is invalid
+   41 |     [01;31m[Kfactory.registerNodeType<br2_bt_bumpgo::Forward>("Forward")[m[K;
+      |     [01;31m[K~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~[m[K
+In file included from [01m[K/Adaptive_Behavior_Trees/ros_ws/src/bump_and_go/include/bump_and_go/Forward.hpp:7[m[K,
+                 from [01m[K/Adaptive_Behavior_Trees/ros_ws/src/bump_and_go/src/ControlNodes/Forward.cpp:4[m[K:
+[01m[K/opt/ros/humble/include/behaviortree_cpp/bt_factory.h:378:8:[m[K [01;36m[Knote: [m[Kcandidate: ‘[01m[Ktemplate<class T, class ... ExtraArgs> void BT::BehaviorTreeFactory::registerNodeType(const string&, ExtraArgs ...)[m[K’
+  378 |   void [01;36m[KregisterNodeType[m[K(const std::string& ID, ExtraArgs... args)
+      |        [01;36m[K^~~~~~~~~~~~~~~~[m[K
+[01m[K/opt/ros/humble/include/behaviortree_cpp/bt_factory.h:378:8:[m[K [01;36m[Knote: [m[K  template argument deduction/substitution failed:
+[01m[K/Adaptive_Behavior_Trees/ros_ws/src/bump_and_go/src/ControlNodes/Forward.cpp:41:53:[m[K [01;31m[Kerror: [m[Ktemplate argument 1 is invalid
+   41 |     [01;31m[Kfactory.registerNodeType<br2_bt_bumpgo::Forward>("Forward")[m[K;
+      |     [01;31m[K~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~[m[K
+gmake[2]: *** [CMakeFiles/bg_forward_node.dir/build.make:76: CMakeFiles/bg_forward_node.dir/src/ControlNodes/Forward.cpp.o] Error 1
+gmake[1]: *** [CMakeFiles/Makefile2:139: CMakeFiles/bg_forward_node.dir/all] Error 2
+gmake: *** [Makefile:146: all] Error 2

@@ -1,0 +1,2 @@
+source;share/bump_and_go/environment/ament_prefix_path.sh
+source;share/bump_and_go/environment/path.sh

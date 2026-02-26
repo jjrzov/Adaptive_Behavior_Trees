@@ -1,0 +1,8 @@
+[01m[K/Adaptive_Behavior_Trees/ros_ws/src/bump_and_go/src/bump_and_go.cpp:7:10:[m[K [01;31m[Kfatal error: [m[Kbehaviortree_cpp/control/sequence_node.h: No such file or directory
+    7 | #include [01;31m[K"behaviortree_cpp/control/sequence_node.h"[m[K
+      |          [01;31m[K^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[m[K
+compilation terminated.
+gmake[2]: *** [CMakeFiles/bumpgo.dir/build.make:76: CMakeFiles/bumpgo.dir/src/bump_and_go.cpp.o] Error 1
+gmake[1]: *** [CMakeFiles/Makefile2:165: CMakeFiles/bumpgo.dir/all] Error 2
+gmake[1]: *** Waiting for unfinished jobs....
+gmake: *** [Makefile:146: all] Error 2

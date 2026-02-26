@@ -1,0 +1,30 @@
+[0.017s] Invoking command in '/Adaptive_Behavior_Trees/ros_ws/build/bump_and_go': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/humble /usr/bin/cmake --build /Adaptive_Behavior_Trees/ros_ws/build/bump_and_go -- -j16 -l16
+[0.112s] [35m[1mConsolidate compiler generated dependencies of target bumpgo[0m
+[0.112s] [35m[1mConsolidate compiler generated dependencies of target bg_forward_node[0m
+[0.131s] [ 50%] Built target bumpgo
+[0.131s] [ 75%] [32mBuilding CXX object CMakeFiles/bg_forward_node.dir/src/ControlNodes/Forward.cpp.o[0m
+[4.668s] [100%] [32m[1mLinking CXX shared library libbg_forward_node.so[0m
+[4.869s] [100%] Built target bg_forward_node
+[4.880s] Invoked command in '/Adaptive_Behavior_Trees/ros_ws/build/bump_and_go' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/humble /usr/bin/cmake --build /Adaptive_Behavior_Trees/ros_ws/build/bump_and_go -- -j16 -l16
+[4.889s] Invoking command in '/Adaptive_Behavior_Trees/ros_ws/build/bump_and_go': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/humble /usr/bin/cmake --install /Adaptive_Behavior_Trees/ros_ws/build/bump_and_go
+[4.895s] -- Install configuration: ""
+[4.896s] -- Installing: /Adaptive_Behavior_Trees/ros_ws/install/bump_and_go/lib/bump_and_go/libbg_forward_node.so
+[4.900s] -- Set runtime path of "/Adaptive_Behavior_Trees/ros_ws/install/bump_and_go/lib/bump_and_go/libbg_forward_node.so" to ""
+[4.901s] -- Installing: /Adaptive_Behavior_Trees/ros_ws/install/bump_and_go/lib/bump_and_go/bumpgo
+[4.903s] -- Set runtime path of "/Adaptive_Behavior_Trees/ros_ws/install/bump_and_go/lib/bump_and_go/bumpgo" to ""
+[4.903s] -- Up-to-date: /Adaptive_Behavior_Trees/ros_ws/install/bump_and_go/share/ament_index/resource_index/package_run_dependencies/bump_and_go
+[4.903s] -- Up-to-date: /Adaptive_Behavior_Trees/ros_ws/install/bump_and_go/share/ament_index/resource_index/parent_prefix_path/bump_and_go
+[4.903s] -- Up-to-date: /Adaptive_Behavior_Trees/ros_ws/install/bump_and_go/share/bump_and_go/environment/ament_prefix_path.sh
+[4.903s] -- Installing: /Adaptive_Behavior_Trees/ros_ws/install/bump_and_go/share/bump_and_go/environment/ament_prefix_path.dsv
+[4.904s] -- Up-to-date: /Adaptive_Behavior_Trees/ros_ws/install/bump_and_go/share/bump_and_go/environment/path.sh
+[4.904s] -- Installing: /Adaptive_Behavior_Trees/ros_ws/install/bump_and_go/share/bump_and_go/environment/path.dsv
+[4.904s] -- Up-to-date: /Adaptive_Behavior_Trees/ros_ws/install/bump_and_go/share/bump_and_go/local_setup.bash
+[4.904s] -- Up-to-date: /Adaptive_Behavior_Trees/ros_ws/install/bump_and_go/share/bump_and_go/local_setup.sh
+[4.904s] -- Up-to-date: /Adaptive_Behavior_Trees/ros_ws/install/bump_and_go/share/bump_and_go/local_setup.zsh
+[4.904s] -- Installing: /Adaptive_Behavior_Trees/ros_ws/install/bump_and_go/share/bump_and_go/local_setup.dsv
+[4.905s] -- Installing: /Adaptive_Behavior_Trees/ros_ws/install/bump_and_go/share/bump_and_go/package.dsv
+[4.905s] -- Up-to-date: /Adaptive_Behavior_Trees/ros_ws/install/bump_and_go/share/ament_index/resource_index/packages/bump_and_go
+[4.906s] -- Up-to-date: /Adaptive_Behavior_Trees/ros_ws/install/bump_and_go/share/bump_and_go/cmake/bump_and_goConfig.cmake
+[4.906s] -- Up-to-date: /Adaptive_Behavior_Trees/ros_ws/install/bump_and_go/share/bump_and_go/cmake/bump_and_goConfig-version.cmake
+[4.906s] -- Up-to-date: /Adaptive_Behavior_Trees/ros_ws/install/bump_and_go/share/bump_and_go/package.xml
+[4.907s] Invoked command in '/Adaptive_Behavior_Trees/ros_ws/build/bump_and_go' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/humble /usr/bin/cmake --install /Adaptive_Behavior_Trees/ros_ws/build/bump_and_go

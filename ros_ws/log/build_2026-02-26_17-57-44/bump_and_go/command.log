@@ -1,0 +1,4 @@
+Invoking command in '/Adaptive_Behavior_Trees/ros_ws/build/bump_and_go': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/humble /usr/bin/cmake --build /Adaptive_Behavior_Trees/ros_ws/build/bump_and_go -- -j16 -l16
+Invoked command in '/Adaptive_Behavior_Trees/ros_ws/build/bump_and_go' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/humble /usr/bin/cmake --build /Adaptive_Behavior_Trees/ros_ws/build/bump_and_go -- -j16 -l16
+Invoking command in '/Adaptive_Behavior_Trees/ros_ws/build/bump_and_go': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/humble /usr/bin/cmake --install /Adaptive_Behavior_Trees/ros_ws/build/bump_and_go
+Invoked command in '/Adaptive_Behavior_Trees/ros_ws/build/bump_and_go' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/humble /usr/bin/cmake --install /Adaptive_Behavior_Trees/ros_ws/build/bump_and_go

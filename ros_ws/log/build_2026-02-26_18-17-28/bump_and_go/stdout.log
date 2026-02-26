@@ -1,0 +1,5 @@
+[35m[1mConsolidate compiler generated dependencies of target bumpgo[0m
+[ 25%] [32mBuilding CXX object CMakeFiles/bg_forward_node.dir/src/ControlNodes/Forward.cpp.o[0m
+[ 50%] [32mBuilding CXX object CMakeFiles/bumpgo.dir/src/bump_and_go.cpp.o[0m
+[ 75%] [32m[1mLinking CXX shared library libbg_forward_node.so[0m
+[ 75%] Built target bg_forward_node

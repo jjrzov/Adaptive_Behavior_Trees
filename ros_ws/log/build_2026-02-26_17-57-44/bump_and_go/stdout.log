@@ -1,0 +1,26 @@
+[35m[1mConsolidate compiler generated dependencies of target bumpgo[0m
+[35m[1mConsolidate compiler generated dependencies of target bg_forward_node[0m
+[ 50%] Built target bumpgo
+[ 75%] [32mBuilding CXX object CMakeFiles/bg_forward_node.dir/src/ControlNodes/Forward.cpp.o[0m
+[100%] [32m[1mLinking CXX shared library libbg_forward_node.so[0m
+[100%] Built target bg_forward_node
+-- Install configuration: ""
+-- Installing: /Adaptive_Behavior_Trees/ros_ws/install/bump_and_go/lib/bump_and_go/libbg_forward_node.so
+-- Set runtime path of "/Adaptive_Behavior_Trees/ros_ws/install/bump_and_go/lib/bump_and_go/libbg_forward_node.so" to ""
+-- Installing: /Adaptive_Behavior_Trees/ros_ws/install/bump_and_go/lib/bump_and_go/bumpgo
+-- Set runtime path of "/Adaptive_Behavior_Trees/ros_ws/install/bump_and_go/lib/bump_and_go/bumpgo" to ""
+-- Up-to-date: /Adaptive_Behavior_Trees/ros_ws/install/bump_and_go/share/ament_index/resource_index/package_run_dependencies/bump_and_go
+-- Up-to-date: /Adaptive_Behavior_Trees/ros_ws/install/bump_and_go/share/ament_index/resource_index/parent_prefix_path/bump_and_go
+-- Up-to-date: /Adaptive_Behavior_Trees/ros_ws/install/bump_and_go/share/bump_and_go/environment/ament_prefix_path.sh
+-- Installing: /Adaptive_Behavior_Trees/ros_ws/install/bump_and_go/share/bump_and_go/environment/ament_prefix_path.dsv
+-- Up-to-date: /Adaptive_Behavior_Trees/ros_ws/install/bump_and_go/share/bump_and_go/environment/path.sh
+-- Installing: /Adaptive_Behavior_Trees/ros_ws/install/bump_and_go/share/bump_and_go/environment/path.dsv
+-- Up-to-date: /Adaptive_Behavior_Trees/ros_ws/install/bump_and_go/share/bump_and_go/local_setup.bash
+-- Up-to-date: /Adaptive_Behavior_Trees/ros_ws/install/bump_and_go/share/bump_and_go/local_setup.sh
+-- Up-to-date: /Adaptive_Behavior_Trees/ros_ws/install/bump_and_go/share/bump_and_go/local_setup.zsh
+-- Installing: /Adaptive_Behavior_Trees/ros_ws/install/bump_and_go/share/bump_and_go/local_setup.dsv
+-- Installing: /Adaptive_Behavior_Trees/ros_ws/install/bump_and_go/share/bump_and_go/package.dsv
+-- Up-to-date: /Adaptive_Behavior_Trees/ros_ws/install/bump_and_go/share/ament_index/resource_index/packages/bump_and_go
+-- Up-to-date: /Adaptive_Behavior_Trees/ros_ws/install/bump_and_go/share/bump_and_go/cmake/bump_and_goConfig.cmake
+-- Up-to-date: /Adaptive_Behavior_Trees/ros_ws/install/bump_and_go/share/bump_and_go/cmake/bump_and_goConfig-version.cmake
+-- Up-to-date: /Adaptive_Behavior_Trees/ros_ws/install/bump_and_go/share/bump_and_go/package.xml

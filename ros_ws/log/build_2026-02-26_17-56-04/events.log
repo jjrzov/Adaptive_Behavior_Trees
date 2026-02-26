@@ -1,0 +1,86 @@
+[0.000000] (-) TimerEvent: {}
+[0.000563] (bump_and_go) JobQueued: {'identifier': 'bump_and_go', 'dependencies': OrderedDict()}
+[0.000605] (bump_and_go) JobStarted: {'identifier': 'bump_and_go'}
+[0.015712] (bump_and_go) JobProgress: {'identifier': 'bump_and_go', 'progress': 'cmake'}
+[0.016787] (bump_and_go) JobProgress: {'identifier': 'bump_and_go', 'progress': 'build'}
+[0.017284] (bump_and_go) Command: {'cmd': ['/usr/bin/cmake', '--build', '/Adaptive_Behavior_Trees/ros_ws/build/bump_and_go', '--', '-j16', '-l16'], 'cwd': '/Adaptive_Behavior_Trees/ros_ws/build/bump_and_go', 'env': OrderedDict([('HOSTNAME', 'e830140e9e82'), ('SHLVL', '1'), ('LD_LIBRARY_PATH', '/opt/ros/humble/opt/rviz_ogre_vendor/lib:/opt/ros/humble/lib/x86_64-linux-gnu:/opt/ros/humble/lib'), ('HOME', '/root'), ('OLDPWD', '/Adaptive_Behavior_Trees'), ('ROS_PYTHON_VERSION', '3'), ('WAYLAND_DISPLAY', 'wayland-0'), ('COLCON_PREFIX_PATH', '/Adaptive_Behavior_Trees/ros_ws/install'), ('ROS_DISTRO', 'humble'), ('_', '/usr/bin/colcon'), ('ROS_VERSION', '2'), ('TERM', 'xterm'), ('ROS_LOCALHOST_ONLY', '0'), ('PATH', '/opt/ros/humble/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'), ('XDG_RUNTIME_DIR', '/mnt/wslg/runtime-dir'), ('DISPLAY', ':0'), ('LANG', 'C.UTF-8'), ('LS_COLORS', 'rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:mi=00:su=37;41:sg=30;43:ca=30;41:tw=30;42:ow=34;42:st=37;44:ex=01;32:*.tar=01;31:*.tgz=01;31:*.arc=01;31:*.arj=01;31:*.taz=01;31:*.lha=01;31:*.lz4=01;31:*.lzh=01;31:*.lzma=01;31:*.tlz=01;31:*.txz=01;31:*.tzo=01;31:*.t7z=01;31:*.zip=01;31:*.z=01;31:*.dz=01;31:*.gz=01;31:*.lrz=01;31:*.lz=01;31:*.lzo=01;31:*.xz=01;31:*.zst=01;31:*.tzst=01;31:*.bz2=01;31:*.bz=01;31:*.tbz=01;31:*.tbz2=01;31:*.tz=01;31:*.deb=01;31:*.rpm=01;31:*.jar=01;31:*.war=01;31:*.ear=01;31:*.sar=01;31:*.rar=01;31:*.alz=01;31:*.ace=01;31:*.zoo=01;31:*.cpio=01;31:*.7z=01;31:*.rz=01;31:*.cab=01;31:*.wim=01;31:*.swm=01;31:*.dwm=01;31:*.esd=01;31:*.jpg=01;35:*.jpeg=01;35:*.mjpg=01;35:*.mjpeg=01;35:*.gif=01;35:*.bmp=01;35:*.pbm=01;35:*.pgm=01;35:*.ppm=01;35:*.tga=01;35:*.xbm=01;35:*.xpm=01;35:*.tif=01;35:*.tiff=01;35:*.png=01;35:*.svg=01;35:*.svgz=01;35:*.mng=01;35:*.pcx=01;35:*.mov=01;35:*.mpg=01;35:*.mpeg=01;35:*.m2v=01;35:*.mkv=01;35:*.webm=01;35:*.webp=01;35:*.ogm=01;35:*.mp4=01;35:*.m4v=01;35:*.mp4v=01;35:*.vob=01;35:*.qt=01;35:*.nuv=01;35:*.wmv=01;35:*.asf=01;35:*.rm=01;35:*.rmvb=01;35:*.flc=01;35:*.avi=01;35:*.fli=01;35:*.flv=01;35:*.gl=01;35:*.dl=01;35:*.xcf=01;35:*.xwd=01;35:*.yuv=01;35:*.cgm=01;35:*.emf=01;35:*.ogv=01;35:*.ogx=01;35:*.aac=00;36:*.au=00;36:*.flac=00;36:*.m4a=00;36:*.mid=00;36:*.midi=00;36:*.mka=00;36:*.mp3=00;36:*.mpc=00;36:*.ogg=00;36:*.ra=00;36:*.wav=00;36:*.oga=00;36:*.opus=00;36:*.spx=00;36:*.xspf=00;36:'), ('AMENT_PREFIX_PATH', '/Adaptive_Behavior_Trees/ros_ws/install/bump_and_go:/opt/ros/humble'), ('PWD', '/Adaptive_Behavior_Trees/ros_ws/build/bump_and_go'), ('LC_ALL', 'C.UTF-8'), ('PYTHONPATH', '/opt/ros/humble/lib/python3.10/site-packages:/opt/ros/humble/local/lib/python3.10/dist-packages'), ('COLCON', '1'), ('CMAKE_PREFIX_PATH', '/Adaptive_Behavior_Trees/ros_ws/install/bump_and_go:/opt/ros/humble')]), 'shell': False}
+[0.099626] (-) TimerEvent: {}
+[0.119750] (bump_and_go) StdoutLine: {'line': b'\x1b[35m\x1b[1mConsolidate compiler generated dependencies of target bg_forward_node\x1b[0m\n'}
+[0.133337] (bump_and_go) StdoutLine: {'line': b'[ 25%] \x1b[32mBuilding CXX object CMakeFiles/bumpgo.dir/src/bump_and_go.cpp.o\x1b[0m\n'}
+[0.138989] (bump_and_go) StdoutLine: {'line': b'[ 50%] \x1b[32mBuilding CXX object CMakeFiles/bg_forward_node.dir/src/ControlNodes/Forward.cpp.o\x1b[0m\n'}
+[0.200570] (-) TimerEvent: {}
+[0.303552] (-) TimerEvent: {}
+[0.406812] (-) TimerEvent: {}
+[0.507124] (-) TimerEvent: {}
+[0.607438] (-) TimerEvent: {}
+[0.710163] (-) TimerEvent: {}
+[0.813458] (-) TimerEvent: {}
+[0.916798] (-) TimerEvent: {}
+[1.020132] (-) TimerEvent: {}
+[1.123521] (-) TimerEvent: {}
+[1.226890] (-) TimerEvent: {}
+[1.330250] (-) TimerEvent: {}
+[1.433033] (-) TimerEvent: {}
+[1.533974] (-) TimerEvent: {}
+[1.635641] (-) TimerEvent: {}
+[1.739397] (-) TimerEvent: {}
+[1.841102] (-) TimerEvent: {}
+[1.944544] (-) TimerEvent: {}
+[2.045998] (-) TimerEvent: {}
+[2.149407] (-) TimerEvent: {}
+[2.250227] (-) TimerEvent: {}
+[2.352819] (-) TimerEvent: {}
+[2.454434] (-) TimerEvent: {}
+[2.555188] (-) TimerEvent: {}
+[2.655568] (-) TimerEvent: {}
+[2.733020] (bump_and_go) StderrLine: {'line': b'\x1b[01m\x1b[K/Adaptive_Behavior_Trees/ros_ws/src/bump_and_go/src/ControlNodes/Forward.cpp:\x1b[m\x1b[K In function \xe2\x80\x98\x1b[01m\x1b[Kvoid BT_RegisterNodesFromPlugin(BT::BehaviorTreeFactory&)\x1b[m\x1b[K\xe2\x80\x99:\n'}
+[2.733414] (bump_and_go) StderrLine: {'line': b'\x1b[01m\x1b[K/Adaptive_Behavior_Trees/ros_ws/src/bump_and_go/src/ControlNodes/Forward.cpp:41:30:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[K\xe2\x80\x98\x1b[01m\x1b[Kbr2_bt_bumpgo\x1b[m\x1b[K\xe2\x80\x99 was not declared in this scope\n'}
+[2.733482] (bump_and_go) StderrLine: {'line': b'   41 |     factory.registerNodeType<\x1b[01;31m\x1b[Kbr2_bt_bumpgo\x1b[m\x1b[K::Forward>("Forward");\n'}
+[2.733536] (bump_and_go) StderrLine: {'line': b'      |                              \x1b[01;31m\x1b[K^~~~~~~~~~~~~\x1b[m\x1b[K\n'}
+[2.733584] (bump_and_go) StderrLine: {'line': b'\x1b[01m\x1b[K/Adaptive_Behavior_Trees/ros_ws/src/bump_and_go/src/ControlNodes/Forward.cpp:41:13:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[Kparse error in template argument list\n'}
+[2.733631] (bump_and_go) StderrLine: {'line': b'   41 |     factory.\x1b[01;31m\x1b[KregisterNodeType<br2_bt_bumpgo::Forward>\x1b[m\x1b[K("Forward");\n'}
+[2.733678] (bump_and_go) StderrLine: {'line': b'      |             \x1b[01;31m\x1b[K^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\x1b[m\x1b[K\n'}
+[2.733724] (bump_and_go) StderrLine: {'line': b'\x1b[01m\x1b[K/Adaptive_Behavior_Trees/ros_ws/src/bump_and_go/src/ControlNodes/Forward.cpp:41:53:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[Kno matching function for call to \xe2\x80\x98\x1b[01m\x1b[KBT::BehaviorTreeFactory::registerNodeType<<expression error> >(const char [8])\x1b[m\x1b[K\xe2\x80\x99\n'}
+[2.733765] (bump_and_go) StderrLine: {'line': b'   41 |     \x1b[01;31m\x1b[Kfactory.registerNodeType<br2_bt_bumpgo::Forward>("Forward")\x1b[m\x1b[K;\n'}
+[2.733802] (bump_and_go) StderrLine: {'line': b'      |     \x1b[01;31m\x1b[K~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~\x1b[m\x1b[K\n'}
+[2.733841] (bump_and_go) StderrLine: {'line': b'In file included from \x1b[01m\x1b[K/Adaptive_Behavior_Trees/ros_ws/src/bump_and_go/include/bump_and_go/Forward.hpp:7\x1b[m\x1b[K,\n'}
+[2.733880] (bump_and_go) StderrLine: {'line': b'                 from \x1b[01m\x1b[K/Adaptive_Behavior_Trees/ros_ws/src/bump_and_go/src/ControlNodes/Forward.cpp:4\x1b[m\x1b[K:\n'}
+[2.733918] (bump_and_go) StderrLine: {'line': b'\x1b[01m\x1b[K/opt/ros/humble/include/behaviortree_cpp/bt_factory.h:342:8:\x1b[m\x1b[K \x1b[01;36m\x1b[Knote: \x1b[m\x1b[Kcandidate: \xe2\x80\x98\x1b[01m\x1b[Ktemplate<class T, class ... ExtraArgs> void BT::BehaviorTreeFactory::registerNodeType(const string&, const PortsList&, ExtraArgs ...)\x1b[m\x1b[K\xe2\x80\x99\n'}
+[2.733957] (bump_and_go) StderrLine: {'line': b'  342 |   void \x1b[01;36m\x1b[KregisterNodeType\x1b[m\x1b[K(const std::string& ID, const PortsList& ports, ExtraArgs... args)\n'}
+[2.733994] (bump_and_go) StderrLine: {'line': b'      |        \x1b[01;36m\x1b[K^~~~~~~~~~~~~~~~\x1b[m\x1b[K\n'}
+[2.734031] (bump_and_go) StderrLine: {'line': b'\x1b[01m\x1b[K/opt/ros/humble/include/behaviortree_cpp/bt_factory.h:342:8:\x1b[m\x1b[K \x1b[01;36m\x1b[Knote: \x1b[m\x1b[K  template argument deduction/substitution failed:\n'}
+[2.734068] (bump_and_go) StderrLine: {'line': b'\x1b[01m\x1b[K/Adaptive_Behavior_Trees/ros_ws/src/bump_and_go/src/ControlNodes/Forward.cpp:41:53:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[Ktemplate argument 1 is invalid\n'}
+[2.734105] (bump_and_go) StderrLine: {'line': b'   41 |     \x1b[01;31m\x1b[Kfactory.registerNodeType<br2_bt_bumpgo::Forward>("Forward")\x1b[m\x1b[K;\n'}
+[2.734142] (bump_and_go) StderrLine: {'line': b'      |     \x1b[01;31m\x1b[K~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~\x1b[m\x1b[K\n'}
+[2.734185] (bump_and_go) StderrLine: {'line': b'In file included from \x1b[01m\x1b[K/Adaptive_Behavior_Trees/ros_ws/src/bump_and_go/include/bump_and_go/Forward.hpp:7\x1b[m\x1b[K,\n'}
+[2.734222] (bump_and_go) StderrLine: {'line': b'                 from \x1b[01m\x1b[K/Adaptive_Behavior_Trees/ros_ws/src/bump_and_go/src/ControlNodes/Forward.cpp:4\x1b[m\x1b[K:\n'}
+[2.734257] (bump_and_go) StderrLine: {'line': b'\x1b[01m\x1b[K/opt/ros/humble/include/behaviortree_cpp/bt_factory.h:378:8:\x1b[m\x1b[K \x1b[01;36m\x1b[Knote: \x1b[m\x1b[Kcandidate: \xe2\x80\x98\x1b[01m\x1b[Ktemplate<class T, class ... ExtraArgs> void BT::BehaviorTreeFactory::registerNodeType(const string&, ExtraArgs ...)\x1b[m\x1b[K\xe2\x80\x99\n'}
+[2.734293] (bump_and_go) StderrLine: {'line': b'  378 |   void \x1b[01;36m\x1b[KregisterNodeType\x1b[m\x1b[K(const std::string& ID, ExtraArgs... args)\n'}
+[2.734329] (bump_and_go) StderrLine: {'line': b'      |        \x1b[01;36m\x1b[K^~~~~~~~~~~~~~~~\x1b[m\x1b[K\n'}
+[2.734364] (bump_and_go) StderrLine: {'line': b'\x1b[01m\x1b[K/opt/ros/humble/include/behaviortree_cpp/bt_factory.h:378:8:\x1b[m\x1b[K \x1b[01;36m\x1b[Knote: \x1b[m\x1b[K  template argument deduction/substitution failed:\n'}
+[2.734400] (bump_and_go) StderrLine: {'line': b'\x1b[01m\x1b[K/Adaptive_Behavior_Trees/ros_ws/src/bump_and_go/src/ControlNodes/Forward.cpp:41:53:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[Ktemplate argument 1 is invalid\n'}
+[2.734442] (bump_and_go) StderrLine: {'line': b'   41 |     \x1b[01;31m\x1b[Kfactory.registerNodeType<br2_bt_bumpgo::Forward>("Forward")\x1b[m\x1b[K;\n'}
+[2.734476] (bump_and_go) StderrLine: {'line': b'      |     \x1b[01;31m\x1b[K~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~\x1b[m\x1b[K\n'}
+[2.756394] (-) TimerEvent: {}
+[2.856679] (-) TimerEvent: {}
+[2.960055] (-) TimerEvent: {}
+[3.062773] (-) TimerEvent: {}
+[3.166184] (-) TimerEvent: {}
+[3.267515] (-) TimerEvent: {}
+[3.367850] (-) TimerEvent: {}
+[3.469187] (-) TimerEvent: {}
+[3.570420] (-) TimerEvent: {}
+[3.673793] (-) TimerEvent: {}
+[3.777138] (-) TimerEvent: {}
+[3.822500] (bump_and_go) StderrLine: {'line': b'gmake[2]: *** [CMakeFiles/bg_forward_node.dir/build.make:76: CMakeFiles/bg_forward_node.dir/src/ControlNodes/Forward.cpp.o] Error 1\n'}
+[3.822962] (bump_and_go) StderrLine: {'line': b'gmake[1]: *** [CMakeFiles/Makefile2:139: CMakeFiles/bg_forward_node.dir/all] Error 2\n'}
+[3.823040] (bump_and_go) StderrLine: {'line': b'gmake[1]: *** Waiting for unfinished jobs....\n'}
+[3.877849] (-) TimerEvent: {}
+[3.894351] (bump_and_go) StdoutLine: {'line': b'[ 75%] \x1b[32m\x1b[1mLinking CXX executable bumpgo\x1b[0m\n'}
+[3.978053] (-) TimerEvent: {}
+[4.074190] (bump_and_go) StdoutLine: {'line': b'[ 75%] Built target bumpgo\n'}
+[4.075636] (bump_and_go) StderrLine: {'line': b'gmake: *** [Makefile:146: all] Error 2\n'}
+[4.078123] (bump_and_go) CommandEnded: {'returncode': 2}
+[4.078389] (-) TimerEvent: {}
+[4.096708] (bump_and_go) JobEnded: {'identifier': 'bump_and_go', 'rc': 2}
+[4.107299] (-) EventReactorShutdown: {}

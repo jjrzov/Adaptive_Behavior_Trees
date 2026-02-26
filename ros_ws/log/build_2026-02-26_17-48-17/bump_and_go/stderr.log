@@ -1,0 +1,43 @@
+[01m[K/Adaptive_Behavior_Trees/ros_ws/src/bump_and_go/src/ControlNodes/Forward.cpp:1:[m[K [01;31m[Kerror: [m[Kunterminated #ifndef
+    1 | #ifndef BUMP_AND_GO__FORWARD_HPP_
+      | 
+[01m[K/Adaptive_Behavior_Trees/ros_ws/src/bump_and_go/src/ControlNodes/Forward.cpp:19:1:[m[K [01;31m[Kerror: [m[K‘[01m[KForward[m[K’ does not name a type
+   19 | [01;31m[KForward[m[K::Forward(
+      | [01;31m[K^~~~~~~[m[K
+[01m[K/Adaptive_Behavior_Trees/ros_ws/src/bump_and_go/src/ControlNodes/Forward.cpp:30:1:[m[K [01;31m[Kerror: [m[K‘[01m[KForward[m[K’ has not been declared
+   30 | [01;31m[KForward[m[K::tick()
+      | [01;31m[K^~~~~~~[m[K
+[01m[K/Adaptive_Behavior_Trees/ros_ws/src/bump_and_go/src/ControlNodes/Forward.cpp:[m[K In function ‘[01m[KBT::NodeStatus bump_and_go::tick()[m[K’:
+[01m[K/Adaptive_Behavior_Trees/ros_ws/src/bump_and_go/src/ControlNodes/Forward.cpp:34:5:[m[K [01;31m[Kerror: [m[K‘[01m[Kvel_pub_[m[K’ was not declared in this scope
+   34 |     [01;31m[Kvel_pub_[m[K->publish(vel_msgs);
+      |     [01;31m[K^~~~~~~~[m[K
+[01m[K/Adaptive_Behavior_Trees/ros_ws/src/bump_and_go/src/ControlNodes/Forward.cpp:[m[K In function ‘[01m[Kvoid BT_RegisterNodesFromPlugin(BT::BehaviorTreeFactory&)[m[K’:
+[01m[K/Adaptive_Behavior_Trees/ros_ws/src/bump_and_go/src/ControlNodes/Forward.cpp:44:30:[m[K [01;31m[Kerror: [m[K‘[01m[Kbr2_bt_bumpgo[m[K’ was not declared in this scope
+   44 |     factory.registerNodeType<[01;31m[Kbr2_bt_bumpgo[m[K::Forward>("Forward");
+      |                              [01;31m[K^~~~~~~~~~~~~[m[K
+[01m[K/Adaptive_Behavior_Trees/ros_ws/src/bump_and_go/src/ControlNodes/Forward.cpp:44:13:[m[K [01;31m[Kerror: [m[Kparse error in template argument list
+   44 |     factory.[01;31m[KregisterNodeType<br2_bt_bumpgo::Forward>[m[K("Forward");
+      |             [01;31m[K^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[m[K
+[01m[K/Adaptive_Behavior_Trees/ros_ws/src/bump_and_go/src/ControlNodes/Forward.cpp:44:53:[m[K [01;31m[Kerror: [m[Kno matching function for call to ‘[01m[KBT::BehaviorTreeFactory::registerNodeType<<expression error> >(const char [8])[m[K’
+   44 |     [01;31m[Kfactory.registerNodeType<br2_bt_bumpgo::Forward>("Forward")[m[K;
+      |     [01;31m[K~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~[m[K
+In file included from [01m[K/Adaptive_Behavior_Trees/ros_ws/src/bump_and_go/src/ControlNodes/Forward.cpp:41[m[K:
+[01m[K/opt/ros/humble/include/behaviortree_cpp/bt_factory.h:342:8:[m[K [01;36m[Knote: [m[Kcandidate: ‘[01m[Ktemplate<class T, class ... ExtraArgs> void BT::BehaviorTreeFactory::registerNodeType(const string&, const PortsList&, ExtraArgs ...)[m[K’
+  342 |   void [01;36m[KregisterNodeType[m[K(const std::string& ID, const PortsList& ports, ExtraArgs... args)
+      |        [01;36m[K^~~~~~~~~~~~~~~~[m[K
+[01m[K/opt/ros/humble/include/behaviortree_cpp/bt_factory.h:342:8:[m[K [01;36m[Knote: [m[K  template argument deduction/substitution failed:
+[01m[K/Adaptive_Behavior_Trees/ros_ws/src/bump_and_go/src/ControlNodes/Forward.cpp:44:53:[m[K [01;31m[Kerror: [m[Ktemplate argument 1 is invalid
+   44 |     [01;31m[Kfactory.registerNodeType<br2_bt_bumpgo::Forward>("Forward")[m[K;
+      |     [01;31m[K~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~[m[K
+In file included from [01m[K/Adaptive_Behavior_Trees/ros_ws/src/bump_and_go/src/ControlNodes/Forward.cpp:41[m[K:
+[01m[K/opt/ros/humble/include/behaviortree_cpp/bt_factory.h:378:8:[m[K [01;36m[Knote: [m[Kcandidate: ‘[01m[Ktemplate<class T, class ... ExtraArgs> void BT::BehaviorTreeFactory::registerNodeType(const string&, ExtraArgs ...)[m[K’
+  378 |   void [01;36m[KregisterNodeType[m[K(const std::string& ID, ExtraArgs... args)
+      |        [01;36m[K^~~~~~~~~~~~~~~~[m[K
+[01m[K/opt/ros/humble/include/behaviortree_cpp/bt_factory.h:378:8:[m[K [01;36m[Knote: [m[K  template argument deduction/substitution failed:
+[01m[K/Adaptive_Behavior_Trees/ros_ws/src/bump_and_go/src/ControlNodes/Forward.cpp:44:53:[m[K [01;31m[Kerror: [m[Ktemplate argument 1 is invalid
+   44 |     [01;31m[Kfactory.registerNodeType<br2_bt_bumpgo::Forward>("Forward")[m[K;
+      |     [01;31m[K~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~[m[K
+gmake[2]: *** [CMakeFiles/bg_forward_node.dir/build.make:76: CMakeFiles/bg_forward_node.dir/src/ControlNodes/Forward.cpp.o] Error 1
+gmake[1]: *** [CMakeFiles/Makefile2:139: CMakeFiles/bg_forward_node.dir/all] Error 2
+gmake[1]: *** Waiting for unfinished jobs....
+gmake: *** [Makefile:146: all] Error 2

@@ -1,0 +1,88 @@
+{
+	"configurations" : 
+	[
+		{
+			"directories" : 
+			[
+				{
+					"build" : ".",
+					"hasInstallRule" : true,
+					"jsonFile" : "directory-.-9815babbb904e065cd98.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.12"
+					},
+					"projectIndex" : 0,
+					"source" : ".",
+					"targetIndexes" : 
+					[
+						0,
+						1,
+						2,
+						3
+					]
+				}
+			],
+			"name" : "",
+			"projects" : 
+			[
+				{
+					"directoryIndexes" : 
+					[
+						0
+					],
+					"name" : "bump_and_go",
+					"targetIndexes" : 
+					[
+						0,
+						1,
+						2,
+						3
+					]
+				}
+			],
+			"targets" : 
+			[
+				{
+					"directoryIndex" : 0,
+					"id" : "bg_forward_node::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-bg_forward_node-9e1a1a748e3ba88e16e9.json",
+					"name" : "bg_forward_node",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "bump_and_go_uninstall::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-bump_and_go_uninstall-d8034439da1dc4111445.json",
+					"name" : "bump_and_go_uninstall",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "bumpgo::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-bumpgo-904c633b9125f5cbc2f9.json",
+					"name" : "bumpgo",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "uninstall::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-uninstall-18b95730a0c52995d347.json",
+					"name" : "uninstall",
+					"projectIndex" : 0
+				}
+			]
+		}
+	],
+	"kind" : "codemodel",
+	"paths" : 
+	{
+		"build" : "/Adaptive_Behavior_Trees/ros_ws/build/bump_and_go",
+		"source" : "/Adaptive_Behavior_Trees/ros_ws/src/bump_and_go"
+	},
+	"version" : 
+	{
+		"major" : 2,
+		"minor" : 3
+	}
+}

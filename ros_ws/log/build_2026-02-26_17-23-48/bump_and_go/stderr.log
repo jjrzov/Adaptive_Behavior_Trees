@@ -1,0 +1,7 @@
+[01m[K/Adaptive_Behavior_Trees/ros_ws/src/bump_and_go/src/bump_and_go.cpp:4:10:[m[K [01;31m[Kfatal error: [m[Kbehaviortree_cpp_v3/action_node.h: No such file or directory
+    4 | #include [01;31m[K"behaviortree_cpp_v3/action_node.h"[m[K
+      |          [01;31m[K^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[m[K
+compilation terminated.
+gmake[2]: *** [CMakeFiles/bumpgo.dir/build.make:76: CMakeFiles/bumpgo.dir/src/bump_and_go.cpp.o] Error 1
+gmake[1]: *** [CMakeFiles/Makefile2:137: CMakeFiles/bumpgo.dir/all] Error 2
+gmake: *** [Makefile:146: all] Error 2

@@ -1,0 +1,15 @@
+[ 25%] [32mBuilding CXX object CMakeFiles/bumpgo.dir/src/bump_and_go.cpp.o[0m
+[ 75%] Built target bg_forward_node
+[01m[K/Adaptive_Behavior_Trees/ros_ws/src/bump_and_go/src/bump_and_go.cpp:[m[K In function ‘[01m[Kint main(int, char**)[m[K’:
+[01m[K/Adaptive_Behavior_Trees/ros_ws/src/bump_and_go/src/bump_and_go.cpp:33:68:[m[K [01;31m[Kerror: [m[K‘[01m[Kconfig[m[K’ was not declared in this scope
+   33 |     auto root_seq = std::make_shared<BT::SequenceNode>("sequence", [01;31m[Kconfig[m[K);
+      |                                                                    [01;31m[K^~~~~~[m[K
+[01m[K/Adaptive_Behavior_Trees/ros_ws/src/bump_and_go/src/bump_and_go.cpp:34:36:[m[K [01;31m[Kerror: [m[K‘[01m[KForward[m[K’ was not declared in this scope
+   34 |     auto action = std::make_shared<[01;31m[KForward[m[K>("forward", config);
+      |                                    [01;31m[K^~~~~~~[m[K
+[01m[K/Adaptive_Behavior_Trees/ros_ws/src/bump_and_go/src/bump_and_go.cpp:36:5:[m[K [01;31m[Kerror: [m[K‘[01m[Ksequence[m[K’ was not declared in this scope
+   36 |     [01;31m[Ksequence[m[K->addChild(action.get());
+      |     [01;31m[K^~~~~~~~[m[K
+gmake[2]: *** [CMakeFiles/bumpgo.dir/build.make:76: CMakeFiles/bumpgo.dir/src/bump_and_go.cpp.o] Error 1
+gmake[1]: *** [CMakeFiles/Makefile2:165: CMakeFiles/bumpgo.dir/all] Error 2
+gmake: *** [Makefile:146: all] Error 2

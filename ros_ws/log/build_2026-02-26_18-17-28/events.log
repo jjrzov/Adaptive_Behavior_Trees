@@ -1,0 +1,112 @@
+[0.000000] (-) TimerEvent: {}
+[0.000616] (bump_and_go) JobQueued: {'identifier': 'bump_and_go', 'dependencies': OrderedDict()}
+[0.000657] (bump_and_go) JobStarted: {'identifier': 'bump_and_go'}
+[0.015300] (bump_and_go) JobProgress: {'identifier': 'bump_and_go', 'progress': 'cmake'}
+[0.016287] (bump_and_go) JobProgress: {'identifier': 'bump_and_go', 'progress': 'build'}
+[0.016914] (bump_and_go) Command: {'cmd': ['/usr/bin/cmake', '--build', '/Adaptive_Behavior_Trees/ros_ws/build/bump_and_go', '--', '-j16', '-l16'], 'cwd': '/Adaptive_Behavior_Trees/ros_ws/build/bump_and_go', 'env': OrderedDict([('HOSTNAME', 'e830140e9e82'), ('SHLVL', '1'), ('LD_LIBRARY_PATH', '/opt/ros/humble/opt/rviz_ogre_vendor/lib:/opt/ros/humble/lib/x86_64-linux-gnu:/opt/ros/humble/lib'), ('HOME', '/root'), ('OLDPWD', '/Adaptive_Behavior_Trees'), ('ROS_PYTHON_VERSION', '3'), ('WAYLAND_DISPLAY', 'wayland-0'), ('COLCON_PREFIX_PATH', '/Adaptive_Behavior_Trees/ros_ws/install'), ('ROS_DISTRO', 'humble'), ('_', '/usr/bin/colcon'), ('ROS_VERSION', '2'), ('TERM', 'xterm'), ('ROS_LOCALHOST_ONLY', '0'), ('PATH', '/opt/ros/humble/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'), ('XDG_RUNTIME_DIR', '/mnt/wslg/runtime-dir'), ('DISPLAY', ':0'), ('LANG', 'C.UTF-8'), ('LS_COLORS', 'rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:mi=00:su=37;41:sg=30;43:ca=30;41:tw=30;42:ow=34;42:st=37;44:ex=01;32:*.tar=01;31:*.tgz=01;31:*.arc=01;31:*.arj=01;31:*.taz=01;31:*.lha=01;31:*.lz4=01;31:*.lzh=01;31:*.lzma=01;31:*.tlz=01;31:*.txz=01;31:*.tzo=01;31:*.t7z=01;31:*.zip=01;31:*.z=01;31:*.dz=01;31:*.gz=01;31:*.lrz=01;31:*.lz=01;31:*.lzo=01;31:*.xz=01;31:*.zst=01;31:*.tzst=01;31:*.bz2=01;31:*.bz=01;31:*.tbz=01;31:*.tbz2=01;31:*.tz=01;31:*.deb=01;31:*.rpm=01;31:*.jar=01;31:*.war=01;31:*.ear=01;31:*.sar=01;31:*.rar=01;31:*.alz=01;31:*.ace=01;31:*.zoo=01;31:*.cpio=01;31:*.7z=01;31:*.rz=01;31:*.cab=01;31:*.wim=01;31:*.swm=01;31:*.dwm=01;31:*.esd=01;31:*.jpg=01;35:*.jpeg=01;35:*.mjpg=01;35:*.mjpeg=01;35:*.gif=01;35:*.bmp=01;35:*.pbm=01;35:*.pgm=01;35:*.ppm=01;35:*.tga=01;35:*.xbm=01;35:*.xpm=01;35:*.tif=01;35:*.tiff=01;35:*.png=01;35:*.svg=01;35:*.svgz=01;35:*.mng=01;35:*.pcx=01;35:*.mov=01;35:*.mpg=01;35:*.mpeg=01;35:*.m2v=01;35:*.mkv=01;35:*.webm=01;35:*.webp=01;35:*.ogm=01;35:*.mp4=01;35:*.m4v=01;35:*.mp4v=01;35:*.vob=01;35:*.qt=01;35:*.nuv=01;35:*.wmv=01;35:*.asf=01;35:*.rm=01;35:*.rmvb=01;35:*.flc=01;35:*.avi=01;35:*.fli=01;35:*.flv=01;35:*.gl=01;35:*.dl=01;35:*.xcf=01;35:*.xwd=01;35:*.yuv=01;35:*.cgm=01;35:*.emf=01;35:*.ogv=01;35:*.ogx=01;35:*.aac=00;36:*.au=00;36:*.flac=00;36:*.m4a=00;36:*.mid=00;36:*.midi=00;36:*.mka=00;36:*.mp3=00;36:*.mpc=00;36:*.ogg=00;36:*.ra=00;36:*.wav=00;36:*.oga=00;36:*.opus=00;36:*.spx=00;36:*.xspf=00;36:'), ('AMENT_PREFIX_PATH', '/Adaptive_Behavior_Trees/ros_ws/install/bump_and_go:/opt/ros/humble'), ('PWD', '/Adaptive_Behavior_Trees/ros_ws/build/bump_and_go'), ('LC_ALL', 'C.UTF-8'), ('PYTHONPATH', '/opt/ros/humble/lib/python3.10/site-packages:/opt/ros/humble/local/lib/python3.10/dist-packages'), ('COLCON', '1'), ('CMAKE_PREFIX_PATH', '/Adaptive_Behavior_Trees/ros_ws/install/bump_and_go:/opt/ros/humble')]), 'shell': False}
+[0.099937] (-) TimerEvent: {}
+[0.109866] (bump_and_go) StdoutLine: {'line': b'\x1b[35m\x1b[1mConsolidate compiler generated dependencies of target bumpgo\x1b[0m\n'}
+[0.122461] (bump_and_go) StdoutLine: {'line': b'[ 25%] \x1b[32mBuilding CXX object CMakeFiles/bg_forward_node.dir/src/ControlNodes/Forward.cpp.o\x1b[0m\n'}
+[0.128149] (bump_and_go) StdoutLine: {'line': b'[ 50%] \x1b[32mBuilding CXX object CMakeFiles/bumpgo.dir/src/bump_and_go.cpp.o\x1b[0m\n'}
+[0.200086] (-) TimerEvent: {}
+[0.303537] (-) TimerEvent: {}
+[0.404484] (-) TimerEvent: {}
+[0.505668] (-) TimerEvent: {}
+[0.605970] (-) TimerEvent: {}
+[0.708405] (-) TimerEvent: {}
+[0.813000] (-) TimerEvent: {}
+[0.916601] (-) TimerEvent: {}
+[1.020084] (-) TimerEvent: {}
+[1.123613] (-) TimerEvent: {}
+[1.223962] (-) TimerEvent: {}
+[1.324347] (-) TimerEvent: {}
+[1.425803] (-) TimerEvent: {}
+[1.527768] (-) TimerEvent: {}
+[1.631246] (-) TimerEvent: {}
+[1.731655] (-) TimerEvent: {}
+[1.835214] (-) TimerEvent: {}
+[1.938815] (-) TimerEvent: {}
+[2.039944] (-) TimerEvent: {}
+[2.143508] (-) TimerEvent: {}
+[2.244319] (-) TimerEvent: {}
+[2.347938] (-) TimerEvent: {}
+[2.450174] (-) TimerEvent: {}
+[2.552752] (-) TimerEvent: {}
+[2.653824] (-) TimerEvent: {}
+[2.754817] (-) TimerEvent: {}
+[2.785235] (bump_and_go) StderrLine: {'line': b'\x1b[01m\x1b[K/Adaptive_Behavior_Trees/ros_ws/src/bump_and_go/src/bump_and_go.cpp:\x1b[m\x1b[K In function \xe2\x80\x98\x1b[01m\x1b[Kint main(int, char**)\x1b[m\x1b[K\xe2\x80\x99:\n'}
+[2.785436] (bump_and_go) StderrLine: {'line': b'\x1b[01m\x1b[K/Adaptive_Behavior_Trees/ros_ws/src/bump_and_go/src/bump_and_go.cpp:37:36:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[K\xe2\x80\x98\x1b[01m\x1b[KForward\x1b[m\x1b[K\xe2\x80\x99 was not declared in this scope\n'}
+[2.785485] (bump_and_go) StderrLine: {'line': b'   37 |     auto action = std::make_shared<\x1b[01;31m\x1b[KForward\x1b[m\x1b[K>("forward", config);\n'}
+[2.785523] (bump_and_go) StderrLine: {'line': b'      |                                    \x1b[01;31m\x1b[K^~~~~~~\x1b[m\x1b[K\n'}
+[2.785559] (bump_and_go) StderrLine: {'line': b'\x1b[01m\x1b[K/Adaptive_Behavior_Trees/ros_ws/src/bump_and_go/src/bump_and_go.cpp:37:44:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[Kno matching function for call to \xe2\x80\x98\x1b[01m\x1b[Kmake_shared<<expression error> >(const char [8], BT::NodeConfig&)\x1b[m\x1b[K\xe2\x80\x99\n'}
+[2.785595] (bump_and_go) StderrLine: {'line': b'   37 |     auto action = \x1b[01;31m\x1b[Kstd::make_shared<Forward>("forward", config)\x1b[m\x1b[K;\n'}
+[2.785628] (bump_and_go) StderrLine: {'line': b'      |                   \x1b[01;31m\x1b[K~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~\x1b[m\x1b[K\n'}
+[2.785661] (bump_and_go) StderrLine: {'line': b'In file included from \x1b[01m\x1b[K/usr/include/c++/11/memory:77\x1b[m\x1b[K,\n'}
+[2.785695] (bump_and_go) StderrLine: {'line': b'                 from \x1b[01m\x1b[K/Adaptive_Behavior_Trees/ros_ws/src/bump_and_go/src/bump_and_go.cpp:2\x1b[m\x1b[K:\n'}
+[2.785731] (bump_and_go) StderrLine: {'line': b'\x1b[01m\x1b[K/usr/include/c++/11/bits/shared_ptr.h:875:5:\x1b[m\x1b[K \x1b[01;36m\x1b[Knote: \x1b[m\x1b[Kcandidate: \xe2\x80\x98\x1b[01m\x1b[Ktemplate<class _Tp, class ... _Args> std::shared_ptr<_Tp> std::make_shared(_Args&& ...)\x1b[m\x1b[K\xe2\x80\x99\n'}
+[2.785772] (bump_and_go) StderrLine: {'line': b'  875 |     \x1b[01;36m\x1b[Kmake_shared\x1b[m\x1b[K(_Args&&... __args)\n'}
+[2.785807] (bump_and_go) StderrLine: {'line': b'      |     \x1b[01;36m\x1b[K^~~~~~~~~~~\x1b[m\x1b[K\n'}
+[2.785840] (bump_and_go) StderrLine: {'line': b'\x1b[01m\x1b[K/usr/include/c++/11/bits/shared_ptr.h:875:5:\x1b[m\x1b[K \x1b[01;36m\x1b[Knote: \x1b[m\x1b[K  template argument deduction/substitution failed:\n'}
+[2.785874] (bump_and_go) StderrLine: {'line': b'\x1b[01m\x1b[K/Adaptive_Behavior_Trees/ros_ws/src/bump_and_go/src/bump_and_go.cpp:37:44:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[Ktemplate argument 1 is invalid\n'}
+[2.785908] (bump_and_go) StderrLine: {'line': b'   37 |     auto action = \x1b[01;31m\x1b[Kstd::make_shared<Forward>("forward", config)\x1b[m\x1b[K;\n'}
+[2.785941] (bump_and_go) StderrLine: {'line': b'      |                   \x1b[01;31m\x1b[K~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~\x1b[m\x1b[K\n'}
+[2.789483] (bump_and_go) StderrLine: {'line': b'\x1b[01m\x1b[K/Adaptive_Behavior_Trees/ros_ws/src/bump_and_go/src/bump_and_go.cpp:48:27:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[K\xe2\x80\x98\x1b[01m\x1b[Kclass std::shared_ptr<BT::SequenceNode>\x1b[m\x1b[K\xe2\x80\x99 has no member named \xe2\x80\x98\x1b[01m\x1b[KexecuteTick\x1b[m\x1b[K\xe2\x80\x99\n'}
+[2.789630] (bump_and_go) StderrLine: {'line': b'   48 |         finish = root_seq.\x1b[01;31m\x1b[KexecuteTick\x1b[m\x1b[K() != BT::NodeStatus::RUNNING;\n'}
+[2.789689] (bump_and_go) StderrLine: {'line': b'      |                           \x1b[01;31m\x1b[K^~~~~~~~~~~\x1b[m\x1b[K\n'}
+[2.855509] (-) TimerEvent: {}
+[2.959112] (-) TimerEvent: {}
+[3.061894] (-) TimerEvent: {}
+[3.165482] (-) TimerEvent: {}
+[3.266828] (-) TimerEvent: {}
+[3.367909] (-) TimerEvent: {}
+[3.470362] (-) TimerEvent: {}
+[3.573430] (-) TimerEvent: {}
+[3.577726] (bump_and_go) StderrLine: {'line': b'In file included from \x1b[01m\x1b[K/usr/include/x86_64-linux-gnu/c++/11/bits/c++allocator.h:33\x1b[m\x1b[K,\n'}
+[3.577861] (bump_and_go) StderrLine: {'line': b'                 from \x1b[01m\x1b[K/usr/include/c++/11/bits/allocator.h:46\x1b[m\x1b[K,\n'}
+[3.577907] (bump_and_go) StderrLine: {'line': b'                 from \x1b[01m\x1b[K/usr/include/c++/11/string:41\x1b[m\x1b[K,\n'}
+[3.577950] (bump_and_go) StderrLine: {'line': b'                 from \x1b[01m\x1b[K/Adaptive_Behavior_Trees/ros_ws/src/bump_and_go/src/bump_and_go.cpp:1\x1b[m\x1b[K:\n'}
+[3.577990] (bump_and_go) StderrLine: {'line': b'/usr/include/c++/11/ext/new_allocator.h: In instantiation of \xe2\x80\x98\x1b[01m\x1b[Kvoid __gnu_cxx::new_allocator<_Tp>::construct(_Up*, _Args&& ...) [with _Up = BT::SequenceNode; _Args = {const char (&)[9], BT::NodeConfig&}; _Tp = BT::SequenceNode]\x1b[m\x1b[K\xe2\x80\x99:\n'}
+[3.578037] (bump_and_go) StderrLine: {'line': b'\x1b[01m\x1b[K/usr/include/c++/11/bits/alloc_traits.h:516:17:\x1b[m\x1b[K   required from \xe2\x80\x98\x1b[01m\x1b[Kstatic void std::allocator_traits<std::allocator<_CharT> >::construct(std::allocator_traits<std::allocator<_CharT> >::allocator_type&, _Up*, _Args&& ...) [with _Up = BT::SequenceNode; _Args = {const char (&)[9], BT::NodeConfig&}; _Tp = BT::SequenceNode; std::allocator_traits<std::allocator<_CharT> >::allocator_type = std::allocator<BT::SequenceNode>]\x1b[m\x1b[K\xe2\x80\x99\n'}
+[3.578076] (bump_and_go) StderrLine: {'line': b'\x1b[01m\x1b[K/usr/include/c++/11/bits/shared_ptr_base.h:519:39:\x1b[m\x1b[K   required from \xe2\x80\x98\x1b[01m\x1b[Kstd::_Sp_counted_ptr_inplace<_Tp, _Alloc, _Lp>::_Sp_counted_ptr_inplace(_Alloc, _Args&& ...) [with _Args = {const char (&)[9], BT::NodeConfig&}; _Tp = BT::SequenceNode; _Alloc = std::allocator<BT::SequenceNode>; __gnu_cxx::_Lock_policy _Lp = __gnu_cxx::_S_atomic]\x1b[m\x1b[K\xe2\x80\x99\n'}
+[3.578123] (bump_and_go) StderrLine: {'line': b'\x1b[01m\x1b[K/usr/include/c++/11/bits/shared_ptr_base.h:650:16:\x1b[m\x1b[K   required from \xe2\x80\x98\x1b[01m\x1b[Kstd::__shared_count<_Lp>::__shared_count(_Tp*&, std::_Sp_alloc_shared_tag<_Alloc>, _Args&& ...) [with _Tp = BT::SequenceNode; _Alloc = std::allocator<BT::SequenceNode>; _Args = {const char (&)[9], BT::NodeConfig&}; __gnu_cxx::_Lock_policy _Lp = __gnu_cxx::_S_atomic]\x1b[m\x1b[K\xe2\x80\x99\n'}
+[3.578214] (bump_and_go) StderrLine: {'line': b'\x1b[01m\x1b[K/usr/include/c++/11/bits/shared_ptr_base.h:1342:14:\x1b[m\x1b[K   required from \xe2\x80\x98\x1b[01m\x1b[Kstd::__shared_ptr<_Tp, _Lp>::__shared_ptr(std::_Sp_alloc_shared_tag<_Tp>, _Args&& ...) [with _Alloc = std::allocator<BT::SequenceNode>; _Args = {const char (&)[9], BT::NodeConfig&}; _Tp = BT::SequenceNode; __gnu_cxx::_Lock_policy _Lp = __gnu_cxx::_S_atomic]\x1b[m\x1b[K\xe2\x80\x99\n'}
+[3.578287] (bump_and_go) StderrLine: {'line': b'\x1b[01m\x1b[K/usr/include/c++/11/bits/shared_ptr.h:409:59:\x1b[m\x1b[K   required from \xe2\x80\x98\x1b[01m\x1b[Kstd::shared_ptr<_Tp>::shared_ptr(std::_Sp_alloc_shared_tag<_Tp>, _Args&& ...) [with _Alloc = std::allocator<BT::SequenceNode>; _Args = {const char (&)[9], BT::NodeConfig&}; _Tp = BT::SequenceNode]\x1b[m\x1b[K\xe2\x80\x99\n'}
+[3.578330] (bump_and_go) StderrLine: {'line': b'\x1b[01m\x1b[K/usr/include/c++/11/bits/shared_ptr.h:862:14:\x1b[m\x1b[K   required from \xe2\x80\x98\x1b[01m\x1b[Kstd::shared_ptr<_Tp> std::allocate_shared(const _Alloc&, _Args&& ...) [with _Tp = BT::SequenceNode; _Alloc = std::allocator<BT::SequenceNode>; _Args = {const char (&)[9], BT::NodeConfig&}]\x1b[m\x1b[K\xe2\x80\x99\n'}
+[3.578372] (bump_and_go) StderrLine: {'line': b'\x1b[01m\x1b[K/usr/include/c++/11/bits/shared_ptr.h:878:39:\x1b[m\x1b[K   required from \xe2\x80\x98\x1b[01m\x1b[Kstd::shared_ptr<_Tp> std::make_shared(_Args&& ...) [with _Tp = BT::SequenceNode; _Args = {const char (&)[9], BT::NodeConfig&}]\x1b[m\x1b[K\xe2\x80\x99\n'}
+[3.578411] (bump_and_go) StderrLine: {'line': b'\x1b[01m\x1b[K/Adaptive_Behavior_Trees/ros_ws/src/bump_and_go/src/bump_and_go.cpp:36:55:\x1b[m\x1b[K   required from here\n'}
+[3.578454] (bump_and_go) StderrLine: {'line': b'\x1b[01m\x1b[K/usr/include/c++/11/ext/new_allocator.h:162:11:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[Kno matching function for call to \xe2\x80\x98\x1b[01m\x1b[KBT::SequenceNode::SequenceNode(const char [9], BT::NodeConfig&)\x1b[m\x1b[K\xe2\x80\x99\n'}
+[3.578491] (bump_and_go) StderrLine: {'line': b'  162 |         { \x1b[01;31m\x1b[K::new((void *)__p) _Up(std::forward<_Args>(__args)...)\x1b[m\x1b[K; }\n'}
+[3.578525] (bump_and_go) StderrLine: {'line': b'      |           \x1b[01;31m\x1b[K^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\x1b[m\x1b[K\n'}
+[3.578561] (bump_and_go) StderrLine: {'line': b'In file included from \x1b[01m\x1b[K/opt/ros/humble/include/behaviortree_cpp/behavior_tree.h:33\x1b[m\x1b[K,\n'}
+[3.578595] (bump_and_go) StderrLine: {'line': b'                 from \x1b[01m\x1b[K/opt/ros/humble/include/behaviortree_cpp/bt_factory.h:17\x1b[m\x1b[K,\n'}
+[3.578628] (bump_and_go) StderrLine: {'line': b'                 from \x1b[01m\x1b[K/Adaptive_Behavior_Trees/ros_ws/src/bump_and_go/src/bump_and_go.cpp:5\x1b[m\x1b[K:\n'}
+[3.578662] (bump_and_go) StderrLine: {'line': b'\x1b[01m\x1b[K/opt/ros/humble/include/behaviortree_cpp/controls/sequence_node.h:37:3:\x1b[m\x1b[K \x1b[01;36m\x1b[Knote: \x1b[m\x1b[Kcandidate: \xe2\x80\x98\x1b[01m\x1b[KBT::SequenceNode::SequenceNode(const string&, bool, const NodeConfiguration&)\x1b[m\x1b[K\xe2\x80\x99\n'}
+[3.578695] (bump_and_go) StderrLine: {'line': b'   37 |   \x1b[01;36m\x1b[KSequenceNode\x1b[m\x1b[K(const std::string& name, bool make_async = false,\n'}
+[3.578728] (bump_and_go) StderrLine: {'line': b'      |   \x1b[01;36m\x1b[K^~~~~~~~~~~~\x1b[m\x1b[K\n'}
+[3.578761] (bump_and_go) StderrLine: {'line': b'\x1b[01m\x1b[K/opt/ros/humble/include/behaviortree_cpp/controls/sequence_node.h:37:46:\x1b[m\x1b[K \x1b[01;36m\x1b[Knote: \x1b[m\x1b[K  no known conversion for argument 2 from \xe2\x80\x98\x1b[01m\x1b[KBT::NodeConfig\x1b[m\x1b[K\xe2\x80\x99 to \xe2\x80\x98\x1b[01m\x1b[Kbool\x1b[m\x1b[K\xe2\x80\x99\n'}
+[3.578794] (bump_and_go) StderrLine: {'line': b'   37 |   SequenceNode(const std::string& name, \x1b[01;36m\x1b[Kbool make_async = false\x1b[m\x1b[K,\n'}
+[3.578826] (bump_and_go) StderrLine: {'line': b'      |                                         \x1b[01;36m\x1b[K~~~~~^~~~~~~~~~~~~~~~~~\x1b[m\x1b[K\n'}
+[3.676633] (-) TimerEvent: {}
+[3.750938] (bump_and_go) StderrLine: {'line': b'gmake[2]: *** [CMakeFiles/bumpgo.dir/build.make:76: CMakeFiles/bumpgo.dir/src/bump_and_go.cpp.o] Error 1\n'}
+[3.751302] (bump_and_go) StderrLine: {'line': b'gmake[1]: *** [CMakeFiles/Makefile2:165: CMakeFiles/bumpgo.dir/all] Error 2\n'}
+[3.751375] (bump_and_go) StderrLine: {'line': b'gmake[1]: *** Waiting for unfinished jobs....\n'}
+[3.776797] (-) TimerEvent: {}
+[3.878963] (-) TimerEvent: {}
+[3.979602] (-) TimerEvent: {}
+[4.082709] (-) TimerEvent: {}
+[4.186228] (-) TimerEvent: {}
+[4.287362] (-) TimerEvent: {}
+[4.390828] (-) TimerEvent: {}
+[4.492165] (-) TimerEvent: {}
+[4.595629] (-) TimerEvent: {}
+[4.696560] (-) TimerEvent: {}
+[4.796855] (-) TimerEvent: {}
+[4.898750] (-) TimerEvent: {}
+[4.927653] (bump_and_go) StdoutLine: {'line': b'[ 75%] \x1b[32m\x1b[1mLinking CXX shared library libbg_forward_node.so\x1b[0m\n'}
+[4.999133] (-) TimerEvent: {}
+[5.101974] (-) TimerEvent: {}
+[5.124670] (bump_and_go) StdoutLine: {'line': b'[ 75%] Built target bg_forward_node\n'}
+[5.126019] (bump_and_go) StderrLine: {'line': b'gmake: *** [Makefile:146: all] Error 2\n'}
+[5.128650] (bump_and_go) CommandEnded: {'returncode': 2}
+[5.147287] (bump_and_go) JobEnded: {'identifier': 'bump_and_go', 'rc': 2}
+[5.157784] (-) EventReactorShutdown: {}

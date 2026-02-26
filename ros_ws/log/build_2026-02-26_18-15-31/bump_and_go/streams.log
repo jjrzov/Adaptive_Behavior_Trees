@@ -1,0 +1,17 @@
+[0.019s] Invoking command in '/Adaptive_Behavior_Trees/ros_ws/build/bump_and_go': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/humble /usr/bin/cmake --build /Adaptive_Behavior_Trees/ros_ws/build/bump_and_go -- -j16 -l16
+[0.124s] [ 25%] [32mBuilding CXX object CMakeFiles/bumpgo.dir/src/bump_and_go.cpp.o[0m
+[0.124s] [ 75%] Built target bg_forward_node
+[2.666s] [01m[K/Adaptive_Behavior_Trees/ros_ws/src/bump_and_go/src/bump_and_go.cpp:[m[K In function ‘[01m[Kint main(int, char**)[m[K’:
+[2.666s] [01m[K/Adaptive_Behavior_Trees/ros_ws/src/bump_and_go/src/bump_and_go.cpp:33:68:[m[K [01;31m[Kerror: [m[K‘[01m[Kconfig[m[K’ was not declared in this scope
+[2.666s]    33 |     auto root_seq = std::make_shared<BT::SequenceNode>("sequence", [01;31m[Kconfig[m[K);
+[2.666s]       |                                                                    [01;31m[K^~~~~~[m[K
+[2.668s] [01m[K/Adaptive_Behavior_Trees/ros_ws/src/bump_and_go/src/bump_and_go.cpp:34:36:[m[K [01;31m[Kerror: [m[K‘[01m[KForward[m[K’ was not declared in this scope
+[2.668s]    34 |     auto action = std::make_shared<[01;31m[KForward[m[K>("forward", config);
+[2.668s]       |                                    [01;31m[K^~~~~~~[m[K
+[2.670s] [01m[K/Adaptive_Behavior_Trees/ros_ws/src/bump_and_go/src/bump_and_go.cpp:36:5:[m[K [01;31m[Kerror: [m[K‘[01m[Ksequence[m[K’ was not declared in this scope
+[2.670s]    36 |     [01;31m[Ksequence[m[K->addChild(action.get());
+[2.670s]       |     [01;31m[K^~~~~~~~[m[K
+[3.516s] gmake[2]: *** [CMakeFiles/bumpgo.dir/build.make:76: CMakeFiles/bumpgo.dir/src/bump_and_go.cpp.o] Error 1
+[3.516s] gmake[1]: *** [CMakeFiles/Makefile2:165: CMakeFiles/bumpgo.dir/all] Error 2
+[3.516s] gmake: *** [Makefile:146: all] Error 2
+[3.520s] Invoked command in '/Adaptive_Behavior_Trees/ros_ws/build/bump_and_go' returned '2': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/humble /usr/bin/cmake --build /Adaptive_Behavior_Trees/ros_ws/build/bump_and_go -- -j16 -l16

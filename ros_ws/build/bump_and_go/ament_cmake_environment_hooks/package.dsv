@@ -1,0 +1,4 @@
+source;share/bump_and_go/local_setup.bash
+source;share/bump_and_go/local_setup.dsv
+source;share/bump_and_go/local_setup.sh
+source;share/bump_and_go/local_setup.zsh
