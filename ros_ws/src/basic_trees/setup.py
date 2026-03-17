@@ -1,6 +1,6 @@
 from setuptools import find_packages, setup
 
-package_name = 'bump_and_go_py'
+package_name = 'basic_trees'
 
 setup(
     name=package_name,
