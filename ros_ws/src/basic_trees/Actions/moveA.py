@@ -5,9 +5,8 @@ from nav2_msgs.action import NavigateToPose
 from action_msgs.msg import GoalStatus
 
 class Move(py_trees.behaviour.Behaviour):
-    def __init__(self, name="Move", goal_room=None):
+    def __init__(self, name="MoveA"):
         super().__init__(name=name)
-        self.goal_room = goal_room
 
         # Set up blackboard client
         self.blackboard = self.attach_blackboard_client(name=name)
@@ -24,27 +23,14 @@ class Move(py_trees.behaviour.Behaviour):
             self.node = kwargs['node']
 
             # Room Locations
-            self.room_A = NavigateToPose.Goal()
-            self.room_A.pose.header.frame_id = 'map'
-            self.room_A.pose.header.stamp = None
-            self.room_A.pose.pose.position.x = 2.0
-            self.room_A.pose.pose.position.y = 1.0
-            self.room_A.pose.pose.orientation.w = 1.0
+            self.goal_msg = NavigateToPose.Goal()
+            self.goal_msg.pose.header.frame_id = 'map'
+            self.goal_msg.pose.header.stamp = None
+            self.goal_msg.pose.pose.position.x = 2.0
+            self.goal_msg.pose.pose.position.y = 1.0
+            self.goal_msg.pose.pose.orientation.w = 1.0
 
-            self.room_B = NavigateToPose.Goal()
-            self.room_B.pose.header.frame_id = 'map'
-            self.room_B.pose.header.stamp = None
-            self.room_B.pose.pose.position.x = -2.0
-            self.room_B.pose.pose.position.y = 5.0
-            self.room_B.pose.pose.orientation.w = 1.0
-
-            self.room_C = NavigateToPose.Goal()
-            self.room_C.pose.header.frame_id = 'map'
-            self.room_C.pose.header.stamp = None
-            self.room_C.pose.pose.position.x = 4.0
-            self.room_C.pose.pose.position.y = -3.0
-            self.room_C.pose.pose.orientation.w = 1.0
-
+            self.goal_room = 'A'
             self.status = False
             self.future = None
             
@@ -59,22 +45,11 @@ class Move(py_trees.behaviour.Behaviour):
     def initialise(self):
         # Called EACH TIME this behaviour becomes active
 
-        # Check if valid input was given
-        if self.goal_room == None:
-            self.status = 'FAILED'
-
         if (self.blackboard.current_room == self.goal_room):
             self.status = 'COMPLETED'
         else:
-            if self.goal_room == 'A':
-                goal_msg = self.room_A
-            elif self.goal_room == 'B':
-                goal_msg = self.room_B
-            else:
-                goal_msg = self.room_C
-
-            goal_msg.pose.header.stamp = self.node.get_clock().now().to_msg()
-            self.future = self.action_client.send_goal_async(goal_msg)
+            self.goal_msg.pose.header.stamp = self.node.get_clock().now().to_msg()
+            self.future = self.action_client.send_goal_async(self.goal_msg)
 
             self.status = 'RUNNING'
         

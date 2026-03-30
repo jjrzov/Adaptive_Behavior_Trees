@@ -15,12 +15,12 @@ class Load(py_trees.behaviour.Behaviour):
         )
         # Read which room package is in
         self.blackboard.register_key(
-            key="package_pickup_room",
+            key="package_1_pickup_room",
             access=py_trees.common.Access.READ
         )
         # Read/Write if robot has package
         self.blackboard.register_key(
-            key="has_package",
+            key="has_package_1",
             access=py_trees.common.Access.WRITE
         )
 
@@ -38,8 +38,8 @@ class Load(py_trees.behaviour.Behaviour):
 
     def update(self) -> py_trees.common.Status:
         # Called EVERY TICK while this behaviour is active
-        if (self.blackboard.package_pickup_room == self.blackboard.current_room) and (self.blackboard.has_package == False):
-                self.blackboard.has_package = True
+        if (self.blackboard.package_1_pickup_room == self.blackboard.current_room) and (self.blackboard.has_package_1 == False):
+                self.blackboard.has_package_1 = True
                 return py_trees.common.Status.SUCCESS
         
         return py_trees.common.Status.FAILURE
