@@ -23,7 +23,7 @@ setup(
         ],
     },
     entry_points={
-        'console_scripts': [
+        'console_scripts': [ 'expand = basic_trees.tree:main'
         ],
     },
 )

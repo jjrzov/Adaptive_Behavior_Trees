@@ -4,16 +4,16 @@ from rclpy.action import ActionClient
 from nav2_msgs.action import NavigateToPose
 from action_msgs.msg import GoalStatus
 
-class Move(py_trees.behaviour.Behaviour):
+class MoveA(py_trees.behaviour.Behaviour):
     def __init__(self, name="MoveA"):
         super().__init__(name=name)
 
         # Set up blackboard client
         self.blackboard = self.attach_blackboard_client(name=name)
 
-        # Read which room robot is currently in
+        # Read world state
         self.blackboard.register_key(
-            key="current_room",
+            key="world_state",
             access=py_trees.common.Access.WRITE
         )
 
@@ -45,7 +45,7 @@ class Move(py_trees.behaviour.Behaviour):
     def initialise(self):
         # Called EACH TIME this behaviour becomes active
 
-        if (self.blackboard.current_room == self.goal_room):
+        if (self.goal_room in self.blackboard.world_state):
             self.status = 'COMPLETED'
         else:
             self.goal_msg.pose.header.stamp = self.node.get_clock().now().to_msg()
@@ -73,7 +73,10 @@ class Move(py_trees.behaviour.Behaviour):
 
                     if (self.result.done()):
                         if (self.result.result().status == GoalStatus.STATUS_SUCCEEDED):
-                            self.blackboard.current_room = self.goal_room
+                            self.blackboard.world_state.add("at_A") # add conditions
+
+                            self.blackboard.world_state.discard("at_B") # delete conditions
+                            self.blackboard.world_state.discard("at_C")
                             return py_trees.common.Status.SUCCESS
                         elif (self.result.result().status == GoalStatus.STATUS_ABORTED or self.result.result().status == GoalStatus.STATUS_CANCELLED):
                             return py_trees.common.Status.FAILURE

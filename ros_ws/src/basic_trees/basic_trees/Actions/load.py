@@ -8,20 +8,15 @@ class Load(py_trees.behaviour.Behaviour):
         # Set up blackboard client
         self.blackboard = self.attach_blackboard_client(name=name)
 
-        # Read which room robot is currently in
+        # Read current world state
         self.blackboard.register_key(
-            key="current_room",
-            access=py_trees.common.Access.READ
+            key="world_state",
+            access=py_trees.common.Access.WRITE
         )
         # Read which room package is in
         self.blackboard.register_key(
             key="package_1_pickup_room",
             access=py_trees.common.Access.READ
-        )
-        # Read/Write if robot has package
-        self.blackboard.register_key(
-            key="has_package_1",
-            access=py_trees.common.Access.WRITE
         )
 
     def setup(self, **kwargs):
@@ -38,8 +33,10 @@ class Load(py_trees.behaviour.Behaviour):
 
     def update(self) -> py_trees.common.Status:
         # Called EVERY TICK while this behaviour is active
-        if (self.blackboard.package_1_pickup_room == self.blackboard.current_room) and (self.blackboard.has_package_1 == False):
-                self.blackboard.has_package_1 = True
+        if (self.blackboard.package_1_pickup_room in self.blackboard.world_state) and ("empty" in self.blackboard.world_state): # pre conditions
+                self.blackboard.world_state.add("has_package_1")    # add conditions
+
+                self.blackboard.world_state.discard("empty")    # delete conditions
                 return py_trees.common.Status.SUCCESS
         
         return py_trees.common.Status.FAILURE

@@ -2,6 +2,14 @@ import py_trees
 import py_trees_ros
 import rclpy
 
+from basic_trees.Conditions.condition import Condition
+from basic_trees.Actions.load import Load
+from basic_trees.Actions.unload import Unload
+from basic_trees.Actions.moveA import MoveA
+from basic_trees.Actions.moveB import MoveB
+from basic_trees.Actions.moveC import MoveC
+
+
 
 action_database = {
         "load_1"   : {"pre" : ["empty", "at_A"], "add" : ["has_package_1"], "del" : ["empty"]},
@@ -13,12 +21,65 @@ action_database = {
 
 def create_tree():
     # Create the root sequence
-    root = py_trees.composites.Sequence(name="Root", memory=True)
-
-    # Add your behaviours here
-    # root.add_children([...])
+    root = Condition("goal", ["has_package_1"])
 
     return root
+
+def getAction(action_str):
+    # Converts action name as a string to action object
+    if action_str == "load_1":
+        return Load()
+    elif action_str == "unload_1":
+        return Unload()
+    elif action_str == "move_A":
+        return MoveA()
+    elif action_str == "move_B":
+        return MoveB()
+    elif action_str == "move_C":
+        return MoveC()
+
+def expand(tree, c):
+    # Check to see if goal condition is root
+    is_root = c.parent is None
+
+    c_set = set(c.preconditions)
+
+    subtree_tau = py_trees.composites.Selector(name="fallback", memory=False)
+    subtree_tau.add_children([c])
+
+    i = 0
+    for action in action_database:
+        # Get action literals
+        a_pre = set(action_database[action]["pre"])
+        a_add = set(action_database[action]["add"])
+        a_del = set(action_database[action]["del"])
+        
+        check1 = c_set.intersection(a_pre.union(a_add - a_del))
+        check2 = (c_set - a_del) == c_set
+    
+        if check1 and check2:
+            c_attr = a_pre.union(c_set - a_add)
+
+            action_sequence = py_trees.composites.Sequence(name=f"a_seq_{i}", memory=False)
+            cond_i = Condition(f"c_attr_{i}", c_attr)
+            action_i = getAction(action)
+            action_sequence.add_children([cond_i, action_i])
+
+            subtree_tau.add_children([action_sequence])
+
+            i += 1
+
+    # Check if condition was root
+    if is_root:
+        return subtree_tau
+    else:
+        c.parent.replace_child(c, subtree_tau)
+        return tree    
+    
+def TraverseToNextCondition(T, checked):
+    # TODO traverse to next condition using a tree search algorithm
+    cond = Condition()
+    return cond
 
 def main():
     rclpy.init()
@@ -33,17 +94,16 @@ def main():
     # Initialise the blackboard BEFORE setting up the tree
     blackboard = py_trees.blackboard.Client(name="Init")
 
-    blackboard.register_key(key="current_room", access=py_trees.common.Access.WRITE)
-    blackboard.current_room = "A"
-
+    # Static parameters for setting up tasks
     blackboard.register_key(key="package_1_pickup_room", access=py_trees.common.Access.WRITE)
-    blackboard.package_1_pickup_room = "A"
+    blackboard.package_1_pickup_room = "at_A"
 
     blackboard.register_key(key="package_1_delivery_room", access=py_trees.common.Access.WRITE)
-    blackboard.package_1_delivery_room = "B"
+    blackboard.package_1_delivery_room = "at_B"
 
-    blackboard.register_key(key="has_package_1", access=py_trees.common.Access.WRITE)
-    blackboard.has_package_1 = False
+    # Dynamic world state
+    blackboard.register_key(key="world_state", access=py_trees.common.Access.WRITE)
+    blackboard.world_state = {"empty", "at_A"}
 
     # Set up the tree
     try:
@@ -51,9 +111,18 @@ def main():
     except py_trees_ros.exceptions.TimedOutError as e:
         rclpy.shutdown()
         return
-
-    # Tick the tree once then stop
-    tree.tick_once()
+    
+    expanded = set()
+    tree.tick_once()    # Tick the tree
+    while root.status == py_trees.common.Status.FAILURE:
+        next_condition = TraverseToNextCondition(tree, expanded)
+        if next_condition == py_trees.common.Status.FAILURE:
+            return False
+        root = expand(root, next_condition)
+        # TODO: Prune
+        expanded = expanded.union(next_condition)
+        tree.
+        tree.tick_once()
 
     try:
         rclpy.spin(tree.node)

@@ -4,8 +4,8 @@ from rclpy.action import ActionClient
 from nav2_msgs.action import NavigateToPose
 from action_msgs.msg import GoalStatus
 
-class Move(py_trees.behaviour.Behaviour):
-    def __init__(self, name="MoveC"):
+class MoveB(py_trees.behaviour.Behaviour):
+    def __init__(self, name="MoveB"):
         super().__init__(name=name)
 
         # Set up blackboard client
@@ -23,14 +23,14 @@ class Move(py_trees.behaviour.Behaviour):
             self.node = kwargs['node']
 
             # Room Locations
-            self.room_C = NavigateToPose.Goal()
-            self.room_C.pose.header.frame_id = 'map'
-            self.room_C.pose.header.stamp = None
-            self.room_C.pose.pose.position.x = 4.0
-            self.room_C.pose.pose.position.y = -3.0
-            self.room_C.pose.pose.orientation.w = 1.0
+            self.goal_msg = NavigateToPose.Goal()
+            self.goal_msg.pose.header.frame_id = 'map'
+            self.goal_msg.pose.header.stamp = None
+            self.goal_msg.pose.pose.position.x = -2.0
+            self.goal_msg.pose.pose.position.y = 5.0
+            self.goal_msg.pose.pose.orientation.w = 1.0
 
-            self.goal_room = 'C'
+            self.goal_room = 'B'
             self.status = False
             self.future = None
             
@@ -45,11 +45,7 @@ class Move(py_trees.behaviour.Behaviour):
     def initialise(self):
         # Called EACH TIME this behaviour becomes active
 
-        # Check if valid input was given
-        if self.goal_room == None:
-            self.status = 'FAILED'
-
-        if (self.blackboard.current_room == self.goal_room):
+        if (self.goal_room in self.blackboard.world_state):
             self.status = 'COMPLETED'
         else:
             self.goal_msg.pose.header.stamp = self.node.get_clock().now().to_msg()
@@ -77,7 +73,10 @@ class Move(py_trees.behaviour.Behaviour):
 
                     if (self.result.done()):
                         if (self.result.result().status == GoalStatus.STATUS_SUCCEEDED):
-                            self.blackboard.current_room = self.goal_room
+                            self.blackboard.world_state.add("at_B") # add conditions
+
+                            self.blackboard.world_state.discard("at_A") # delete conditions
+                            self.blackboard.world_state.discard("at_C")
                             return py_trees.common.Status.SUCCESS
                         elif (self.result.result().status == GoalStatus.STATUS_ABORTED or self.result.result().status == GoalStatus.STATUS_CANCELLED):
                             return py_trees.common.Status.FAILURE
