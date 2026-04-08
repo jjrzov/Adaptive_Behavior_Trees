@@ -8,6 +8,7 @@ from basic_trees.Actions.unload import Unload
 from basic_trees.Actions.moveA import MoveA
 from basic_trees.Actions.moveB import MoveB
 from basic_trees.Actions.moveC import MoveC
+from basic_trees.traverse import Traversal, BFS
 
 
 
@@ -38,7 +39,7 @@ def getAction(action_str):
     elif action_str == "move_C":
         return MoveC()
 
-def expand(tree, c):
+def expand(root, c):
     # Check to see if goal condition is root
     is_root = c.parent is None
 
@@ -74,12 +75,7 @@ def expand(tree, c):
         return subtree_tau
     else:
         c.parent.replace_child(c, subtree_tau)
-        return tree    
-    
-def TraverseToNextCondition(T, checked):
-    # TODO traverse to next condition using a tree search algorithm
-    cond = Condition()
-    return cond
+        return root    
 
 def main():
     rclpy.init()
@@ -112,17 +108,22 @@ def main():
         rclpy.shutdown()
         return
     
-    expanded = set()
-    tree.tick_once()    # Tick the tree
-    while root.status == py_trees.common.Status.FAILURE:
-        next_condition = TraverseToNextCondition(tree, expanded)
-        if next_condition == py_trees.common.Status.FAILURE:
-            return False
-        root = expand(root, next_condition)
-        # TODO: Prune
-        expanded = expanded.union(next_condition)
-        tree.
+    traverse = BFS()    # EDIT traversal function here
+
+    while root.status != py_trees.common.Status.SUCCESS:
+        # Handle tree returning RUNNING or FAILURE
+        rclpy.spin_once(tree.node)
         tree.tick_once()
+
+        if root.status == py_trees.common.Status.FAILURE:
+            # Expand when tree returns failure
+            next_condition = traverse.getNextCondition(root)
+            if next_condition == None:
+                return False
+            next_condition.expanded = True
+            root = expand(root, next_condition)
+            # TODO: Prune
+            tree.root = root
 
     try:
         rclpy.spin(tree.node)
