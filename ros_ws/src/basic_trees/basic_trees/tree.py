@@ -3,17 +3,16 @@ import py_trees_ros
 import rclpy
 
 from basic_trees.Conditions.condition import Condition
-from basic_trees.Actions.load import Load
-from basic_trees.Actions.unload import Unload
-from basic_trees.Actions.moveA import MoveA
-from basic_trees.Actions.moveB import MoveB
-from basic_trees.Actions.moveC import MoveC
-from basic_trees.traverse import Traversal, BFS
-from basic_trees.action_scorer import ActionScorer, ConditionCompletionScorer, TimeScorer
+from basic_trees.Actions import Load, Unload, MoveA, MoveB, MoveC
+from basic_trees.Actions import MockMoveA, MockMoveB, MockMoveC
+from basic_trees.traverse import BFS, DFS
+from basic_trees.action_scorer import ConditionCompletionScorer, TimeScorer
 
+MOCK = True    # Use mock actions or real actions
 
+expansion_counter = 0
 
-action_database = {
+Action_Database = {
         "load_1"   : {"pre" : ["empty", "at_A"], "add" : ["has_package_1"], "del" : ["empty"]},
         "unload_1" : {"pre" : ["has_package_1", "at_B"], "add" : ["empty"], "del" : ["has_package_1"]},
         "move_A"   : {"pre" : [], "add" : ["at_A"], "del" : ["at_B", "at_C"]},
@@ -37,37 +36,50 @@ def setup_world(blackboard):
 
     # Dynamic world state
     blackboard.register_key(key="world_state", access=py_trees.common.Access.WRITE)
-    blackboard.world_state = {"empty", "at_A"}
+    blackboard.world_state = {"empty", "at_C"}
 
-def getAction(action_str):
+def getAction(action_str, mock=MOCK):
     # Converts action name as a string to action object
-    if action_str == "load_1":
-        return Load()
-    elif action_str == "unload_1":
-        return Unload()
-    elif action_str == "move_A":
-        return MoveA()
-    elif action_str == "move_B":
-        return MoveB()
-    elif action_str == "move_C":
-        return MoveC()
+    action_map_real = {
+        "load_1"   : Load,
+        "unload_1" : Unload,
+        "move_A"   : MoveA,
+        "move_B"   : MoveB,
+        "move_C"   : MoveC,
+    }
+    
+    action_map_mock = {
+        "load_1"   : Load,
+        "unload_1" : Unload,
+        "move_A"   : MockMoveA,
+        "move_B"   : MockMoveB,
+        "move_C"   : MockMoveC,
+    }
+    
+    action_map = action_map_mock if mock else action_map_real
+    return action_map[action_str]()
     
 def expand(root, c, scorer=None):
+    global expansion_counter
+
     # Check to see if goal condition is root
     is_root = c.parent is None
+    c_old_parent = c.parent # Need to store old parent because condition can't have 2 parents at once
 
     c_set = set(c.preconditions)
-
     subtree_tau = py_trees.composites.Selector(name="fallback", memory=False)
-    subtree_tau.add_children([c])
 
-    i = 0
+    if not is_root:
+        c_old_parent.remove_child(c)    # Remove condition from old parent before assigning new parent
+    
+    subtree_tau.add_children([c])   # Assign new parent for condition
+
     valid_actions = []
-    for action in action_database:
+    for action in Action_Database:
         # Get action literals
-        a_pre = set(action_database[action]["pre"])
-        a_add = set(action_database[action]["add"])
-        a_del = set(action_database[action]["del"])
+        a_pre = set(Action_Database[action]["pre"])
+        a_add = set(Action_Database[action]["add"])
+        a_del = set(Action_Database[action]["del"])
         
         check1 = c_set.intersection(a_pre.union(a_add - a_del))
         check2 = (c_set - a_del) == c_set
@@ -82,19 +94,20 @@ def expand(root, c, scorer=None):
     else:
         sorted_actions = scorer.sort(c_set, valid_actions) # Sort actions by passed in cost metric
 
-    for i, (action, c_attr) in enumerate(sorted_actions):
-        action_sequence = py_trees.composites.Sequence(name=f"a_seq_{i}", memory=False)
-        cond_i = Condition(f"c_attr_{i}", c_attr)
+    for action, c_attr in sorted_actions:
+        action_sequence = py_trees.composites.Sequence(name=f"a_seq_{expansion_counter}", memory=False)
+        cond_i = Condition(f"c_attr_{expansion_counter}", c_attr)
         action_i = getAction(action)
         action_sequence.add_children([cond_i, action_i])
 
         subtree_tau.add_children([action_sequence])
+        expansion_counter += 1
 
     # Check if condition was root
     if is_root:
         return subtree_tau
     else:
-        c.parent.replace_child(c, subtree_tau)
+        c_old_parent.prepend_child(subtree_tau)
         return root    
 
 def main():
@@ -120,17 +133,29 @@ def main():
         return
     
     traverse = BFS()            # EDIT traversal function here
-    scorer = ConditionCompletionScorer()     # EDIT cost metric for adding actions in expand here
+    scorer = None     # EDIT cost metric for adding actions in expand here
 
     while root.status != py_trees.common.Status.SUCCESS:
         # Handle tree returning RUNNING or FAILURE
-        rclpy.spin_once(tree.node)
-        tree.tick_once()
+        rclpy.spin_once(tree.node, timeout_sec=0)
+        tree.tick()
+
+
+        print(f"--- tick ---")
+        print(f"status: {root.status}")
+        print(f"world_state: {blackboard.world_state}")
+
 
         if root.status == py_trees.common.Status.FAILURE:
             # Expand when tree returns failure
             next_condition = traverse.getNextCondition(root)
+
+            print(f"next_condition: {next_condition.name}")
+
             if next_condition == None:
+
+                print("No more conditions to expand - unsolvable")
+
                 return False
             next_condition.expanded = True
             
@@ -138,6 +163,8 @@ def main():
 
             # TODO: Prune
             tree.root = root
+
+    py_trees.display.render_dot_tree(root, name="tree")
 
     try:
         rclpy.spin(tree.node)

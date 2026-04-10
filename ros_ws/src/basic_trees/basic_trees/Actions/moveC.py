@@ -30,7 +30,7 @@ class MoveC(py_trees.behaviour.Behaviour):
             self.room_C.pose.pose.position.y = -3.0
             self.room_C.pose.pose.orientation.w = 1.0
 
-            self.goal_room = 'C'
+            self.goal_room = 'at_C'
             self.status = False
             self.future = None
             

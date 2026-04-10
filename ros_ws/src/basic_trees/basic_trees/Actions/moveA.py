@@ -30,7 +30,7 @@ class MoveA(py_trees.behaviour.Behaviour):
             self.goal_msg.pose.pose.position.y = 1.0
             self.goal_msg.pose.pose.orientation.w = 1.0
 
-            self.goal_room = 'A'
+            self.goal_room = 'at_A'
             self.status = False
             self.future = None
             
