@@ -9,6 +9,7 @@ from basic_trees.Actions.moveA import MoveA
 from basic_trees.Actions.moveB import MoveB
 from basic_trees.Actions.moveC import MoveC
 from basic_trees.traverse import Traversal, BFS
+from basic_trees.action_scorer import ActionScorer, ConditionCompletionScorer, TimeScorer
 
 
 
@@ -26,6 +27,18 @@ def create_tree():
 
     return root
 
+def setup_world(blackboard):
+    # Static parameters for setting up tasks
+    blackboard.register_key(key="package_1_pickup_room", access=py_trees.common.Access.WRITE)
+    blackboard.package_1_pickup_room = "at_A"
+
+    blackboard.register_key(key="package_1_delivery_room", access=py_trees.common.Access.WRITE)
+    blackboard.package_1_delivery_room = "at_B"
+
+    # Dynamic world state
+    blackboard.register_key(key="world_state", access=py_trees.common.Access.WRITE)
+    blackboard.world_state = {"empty", "at_A"}
+
 def getAction(action_str):
     # Converts action name as a string to action object
     if action_str == "load_1":
@@ -38,8 +51,8 @@ def getAction(action_str):
         return MoveB()
     elif action_str == "move_C":
         return MoveC()
-
-def expand(root, c):
+    
+def expand(root, c, scorer=None):
     # Check to see if goal condition is root
     is_root = c.parent is None
 
@@ -49,6 +62,7 @@ def expand(root, c):
     subtree_tau.add_children([c])
 
     i = 0
+    valid_actions = []
     for action in action_database:
         # Get action literals
         a_pre = set(action_database[action]["pre"])
@@ -60,15 +74,21 @@ def expand(root, c):
     
         if check1 and check2:
             c_attr = a_pre.union(c_set - a_add)
+            
+            valid_actions.append((action, c_attr))    # Only want to sort actions that help solve the condition
 
-            action_sequence = py_trees.composites.Sequence(name=f"a_seq_{i}", memory=False)
-            cond_i = Condition(f"c_attr_{i}", c_attr)
-            action_i = getAction(action)
-            action_sequence.add_children([cond_i, action_i])
+    if scorer == None:
+        sorted_actions = valid_actions
+    else:
+        sorted_actions = scorer.sort(c_set, valid_actions) # Sort actions by passed in cost metric
 
-            subtree_tau.add_children([action_sequence])
+    for i, (action, c_attr) in enumerate(sorted_actions):
+        action_sequence = py_trees.composites.Sequence(name=f"a_seq_{i}", memory=False)
+        cond_i = Condition(f"c_attr_{i}", c_attr)
+        action_i = getAction(action)
+        action_sequence.add_children([cond_i, action_i])
 
-            i += 1
+        subtree_tau.add_children([action_sequence])
 
     # Check if condition was root
     if is_root:
@@ -90,16 +110,7 @@ def main():
     # Initialise the blackboard BEFORE setting up the tree
     blackboard = py_trees.blackboard.Client(name="Init")
 
-    # Static parameters for setting up tasks
-    blackboard.register_key(key="package_1_pickup_room", access=py_trees.common.Access.WRITE)
-    blackboard.package_1_pickup_room = "at_A"
-
-    blackboard.register_key(key="package_1_delivery_room", access=py_trees.common.Access.WRITE)
-    blackboard.package_1_delivery_room = "at_B"
-
-    # Dynamic world state
-    blackboard.register_key(key="world_state", access=py_trees.common.Access.WRITE)
-    blackboard.world_state = {"empty", "at_A"}
+    setup_world(blackboard) # Define world literals
 
     # Set up the tree
     try:
@@ -108,7 +119,8 @@ def main():
         rclpy.shutdown()
         return
     
-    traverse = BFS()    # EDIT traversal function here
+    traverse = BFS()            # EDIT traversal function here
+    scorer = ConditionCompletionScorer()     # EDIT cost metric for adding actions in expand here
 
     while root.status != py_trees.common.Status.SUCCESS:
         # Handle tree returning RUNNING or FAILURE
@@ -121,7 +133,9 @@ def main():
             if next_condition == None:
                 return False
             next_condition.expanded = True
-            root = expand(root, next_condition)
+            
+            root = expand(root, next_condition, scorer)
+
             # TODO: Prune
             tree.root = root
 
