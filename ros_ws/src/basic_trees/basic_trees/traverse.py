@@ -4,11 +4,11 @@ from basic_trees.Conditions.condition import Condition
 
 
 class Traversal:
-    def getNextCondition(self, root):
+    def getNextCondition(self, root, expanded_literals):
         pass
 
 class BFS(Traversal):
-    def getNextCondition(self, root):
+    def getNextCondition(self, root, expanded_literals):
         q = []  # Initialize queue
         q.append(root)  # Add start node to queue
 
@@ -16,7 +16,7 @@ class BFS(Traversal):
             # Keep searching while queue is not empty
             node = q.pop(0)
             if isinstance(node, Condition):
-                if node.expanded == False:
+                if frozenset(node.preconditions) not in expanded_literals:
                     return node # Unexpanded condition node
             
             if isinstance(node, py_trees.composites.Composite):
@@ -25,14 +25,14 @@ class BFS(Traversal):
         return None # All condition nodes have been expanded
 
 class DFS(Traversal):
-    def getNextCondition(self, root):
+    def getNextCondition(self, root, expanded_literals):
         if isinstance(root, Condition):
-            if root.expanded == False:
+            if frozenset(root.preconditions) not in expanded_literals:
                 return root # Unexpanded condition node
             
         if isinstance(root, py_trees.composites.Composite):
             for child in root.children:
-                result = self.getNextCondition(child)
+                result = self.getNextCondition(child, expanded_literals)
 
                 if result != None:
                     return result

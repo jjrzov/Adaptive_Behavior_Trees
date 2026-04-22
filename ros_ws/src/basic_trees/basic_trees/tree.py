@@ -22,7 +22,8 @@ Action_Database = {
 
 def create_tree():
     # Create the root sequence
-    root = Condition("goal", ["has_package_1"])
+    goal_condition = ["has_package_1"]
+    root = Condition(f"goal\n{sorted(goal_condition)}", goal_condition)
 
     return root
 
@@ -96,7 +97,7 @@ def expand(root, c, scorer=None):
 
     for action, c_attr in sorted_actions:
         action_sequence = py_trees.composites.Sequence(name=f"a_seq_{expansion_counter}", memory=False)
-        cond_i = Condition(f"c_attr_{expansion_counter}", c_attr)
+        cond_i = Condition(f"{sorted(c_attr)}", c_attr)
         action_i = getAction(action)
         action_sequence.add_children([cond_i, action_i])
 
@@ -109,6 +110,33 @@ def expand(root, c, scorer=None):
     else:
         c_old_parent.prepend_child(subtree_tau)
         return root    
+    
+def prune(root, expanded_literals):
+    # Go through the tree and remove and conditions that have already been expanded elsewhere
+    prune_nodes = []    # Store nodes to be removed
+    q = []  # Initialize queue
+    q.append(root)  # Add start node to queue
+
+    while len(q) != 0:
+        # Keep searching while queue is not empty
+        node = q.pop(0)
+        if isinstance(node, py_trees.composites.Sequence):
+            # if node is a sequence check that first child is a condition
+            first_child = node.children[0]
+            if isinstance(first_child, Condition):
+                # if its a condition check that if it has already been expanded
+                if frozenset(first_child.preconditions) in expanded_literals:
+                    # Already expanded condition node
+                    prune_nodes.append(node)  # Remove sequence from tree
+        
+        if isinstance(node, py_trees.composites.Composite):
+            q.extend(node.children)
+
+    # Remove nodes in prune nodes
+    for node in prune_nodes:
+        node.parent.remove_child(node)
+    
+    return
 
 def main():
     rclpy.init()
@@ -135,6 +163,8 @@ def main():
     traverse = BFS()            # EDIT traversal function here
     scorer = None     # EDIT cost metric for adding actions in expand here
 
+    expanded_literals = set()
+
     while root.status != py_trees.common.Status.SUCCESS:
         # Handle tree returning RUNNING or FAILURE
         rclpy.spin_once(tree.node, timeout_sec=0)
@@ -148,20 +178,19 @@ def main():
 
         if root.status == py_trees.common.Status.FAILURE:
             # Expand when tree returns failure
-            next_condition = traverse.getNextCondition(root)
-
-            print(f"next_condition: {next_condition.name}")
+            next_condition = traverse.getNextCondition(root, expanded_literals)
 
             if next_condition == None:
-
                 print("No more conditions to expand - unsolvable")
-
                 return False
-            next_condition.expanded = True
+            
+            print(f"next_condition: {next_condition.name}")
+
+            # Add condition literals to expanded set
+            expanded_literals.add(frozenset(next_condition.preconditions))  # Needs to be frozen to keep literals grouped as conditions
             
             root = expand(root, next_condition, scorer)
-
-            # TODO: Prune
+            prune(root, expanded_literals)  # Remove sequence structures that have already been expanded elsewhere
             tree.root = root
 
     py_trees.display.render_dot_tree(root, name="tree")

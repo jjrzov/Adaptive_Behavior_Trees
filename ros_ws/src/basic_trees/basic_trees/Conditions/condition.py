@@ -5,7 +5,6 @@ class Condition(py_trees.behaviour.Behaviour):
     def __init__(self, name="Condition", preconditions={}):
         super().__init__(name=name)
         self.preconditions = set(preconditions)
-        self.expanded = False
         
         # Set up blackboard client
         self.blackboard = self.attach_blackboard_client(name=name)
