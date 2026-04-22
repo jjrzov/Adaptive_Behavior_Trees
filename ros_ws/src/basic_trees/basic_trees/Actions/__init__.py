@@ -4,3 +4,4 @@ from basic_trees.Actions.moveA import MoveA
 from basic_trees.Actions.moveB import MoveB
 from basic_trees.Actions.moveC import MoveC
 from basic_trees.Actions.mock import MockMoveA, MockMoveB, MockMoveC
+from basic_trees.Actions.paper import PaperMove_b_ab, PaperMove_s_ab, PaperMove_s_as

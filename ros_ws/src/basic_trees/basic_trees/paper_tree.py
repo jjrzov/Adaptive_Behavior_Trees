@@ -3,62 +3,41 @@ import py_trees_ros
 import rclpy
 
 from basic_trees.Conditions.condition import Condition
-from basic_trees.Actions import Load, Unload, MoveA, MoveB, MoveC
-from basic_trees.Actions import MockMoveA, MockMoveB, MockMoveC
+from basic_trees.Actions import PaperMove_b_ab, PaperMove_s_as, PaperMove_s_ab
 from basic_trees.traverse import BFS, DFS
 from basic_trees.action_scorer import ConditionCompletionScorer, TimeScorer
 from basic_trees.algorithms import prune, expand
 
-
 MOCK = True    # Use mock actions or real actions
 
-Action_Database = {
-        "load_1"   : {"pre" : ["empty", "at_A"],            "add" : ["has_package_1"],  "del" : ["empty"]},
-        "unload_1" : {"pre" : ["has_package_1", "at_B"],    "add" : ["empty"],          "del" : ["has_package_1"]},
-        "move_A"   : {"pre" : [],                           "add" : ["at_A"],           "del" : ["at_B", "at_C"]},
-        "move_B"   : {"pre" : [],                           "add" : ["at_B"],           "del" : ["at_A", "at_C"]},
-        "move_C"   : {"pre" : [],                           "add" : ["at_C"],           "del" : ["at_A", "at_B"]},
-        } 
+expansion_counter = 0
 
+Action_Database = {
+        "move(b, ab)" : {"pre" : ["Free(ab)", "WayClear"],    "add" : ["At(b, ab)"],               "del" : ["Free(ab)", "At(b, pb)"]},
+        "move(s, ab)" : {"pre" : ["Free(ab)"],                "add" : ["At(s, ab)", "WayClear"],   "del" : ["Free(ab)", "At(s, ps)"]},
+        "move(s, as)" : {"pre" : ["Free(as)"],                "add" : ["At(s, as)", "WayClear"],   "del" : ["Free(as)", "At(s, ps)"]},
+        }
 
 def create_tree():
     # Create the root sequence
-    goal_condition = ["has_package_1"]
+    goal_condition = ["At(b, ab)"]
     root = Condition(f"goal\n{sorted(goal_condition)}", goal_condition)
 
     return root
 
 def setup_world(blackboard):
-    # Static parameters for setting up tasks
-    blackboard.register_key(key="package_1_pickup_room", access=py_trees.common.Access.WRITE)
-    blackboard.package_1_pickup_room = "at_A"
-
-    blackboard.register_key(key="package_1_delivery_room", access=py_trees.common.Access.WRITE)
-    blackboard.package_1_delivery_room = "at_B"
-
     # Dynamic world state
     blackboard.register_key(key="world_state", access=py_trees.common.Access.WRITE)
-    blackboard.world_state = {"empty", "at_C"}
+    blackboard.world_state = {"At(b, pb)", "At(s, ps)", "Free(ab)", "Free(as)"}
 
-def getAction(action_str, mock=MOCK):
+def getAction(action_str):
     # Converts action name as a string to action object
-    action_map_real = {
-        "load_1"   : Load,
-        "unload_1" : Unload,
-        "move_A"   : MoveA,
-        "move_B"   : MoveB,
-        "move_C"   : MoveC,
+    action_map = {
+        "move(b, ab)"   : PaperMove_b_ab,
+        "move(s, ab)"   : PaperMove_s_ab,
+        "move(s, as)"   : PaperMove_s_as,
     }
     
-    action_map_mock = {
-        "load_1"   : Load,
-        "unload_1" : Unload,
-        "move_A"   : MockMoveA,
-        "move_B"   : MockMoveB,
-        "move_C"   : MockMoveC,
-    }
-    
-    action_map = action_map_mock if mock else action_map_real
     return action_map[action_str]()
 
 def main():
