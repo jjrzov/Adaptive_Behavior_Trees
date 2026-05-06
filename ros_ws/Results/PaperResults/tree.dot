@@ -1,0 +1,23 @@
+digraph pastafarianism {
+ordering=out;
+graph [fontname="times-roman"];
+node [fontname="times-roman"];
+edge [fontname="times-roman"];
+fallback [fillcolor=cyan, fontcolor=black, fontsize=9, label=fallback, shape=octagon, style=filled];
+"goal\n['At(b, ab)']" [fillcolor=gray, fontcolor=black, fontsize=9, label="goal\n['At(b, ab)']", shape=ellipse, style=filled];
+fallback -> "goal\n['At(b, ab)']";
+a_seq_0 [fillcolor=orange, fontcolor=black, fontsize=9, label=a_seq_0, shape=box, style=filled];
+fallback -> a_seq_0;
+"fallback*" [fillcolor=cyan, fontcolor=black, fontsize=9, label="fallback*", shape=octagon, style=filled];
+a_seq_0 -> "fallback*";
+"['Free(ab)', 'WayClear']" [fillcolor=gray, fontcolor=black, fontsize=9, label="['Free(ab)', 'WayClear']", shape=ellipse, style=filled];
+"fallback*" -> "['Free(ab)', 'WayClear']";
+a_seq_1 [fillcolor=orange, fontcolor=black, fontsize=9, label=a_seq_1, shape=box, style=filled];
+"fallback*" -> a_seq_1;
+"['Free(ab)', 'Free(as)']" [fillcolor=gray, fontcolor=black, fontsize=9, label="['Free(ab)', 'Free(as)']", shape=ellipse, style=filled];
+a_seq_1 -> "['Free(ab)', 'Free(as)']";
+"move(s, as)" [fillcolor=gray, fontcolor=black, fontsize=9, label="move(s, as)", shape=ellipse, style=filled];
+a_seq_1 -> "move(s, as)";
+"move(b, ab)" [fillcolor=gray, fontcolor=black, fontsize=9, label="move(b, ab)", shape=ellipse, style=filled];
+a_seq_0 -> "move(b, ab)";
+}

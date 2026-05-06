@@ -1,0 +1,305 @@
+<?xml version="1.0" ?>
+<sdf version="1.8">
+  <world name="three_rooms">
+
+    <!-- ====== Plugins ====== -->
+    <plugin filename="ignition-gazebo-physics-system"
+            name="ignition::gazebo::systems::Physics"/>
+    <plugin filename="ignition-gazebo-user-commands-system"
+            name="ignition::gazebo::systems::UserCommands"/>
+    <plugin filename="ignition-gazebo-scene-broadcaster-system"
+            name="ignition::gazebo::systems::SceneBroadcaster"/>
+    <plugin filename="ignition-gazebo-contact-system"
+            name="ignition::gazebo::systems::Contact"/>
+
+    <!-- ====== Lighting ====== -->
+    <light type="directional" name="sun">
+      <cast_shadows>true</cast_shadows>
+      <pose>0 0 10 0 0 0</pose>
+      <diffuse>1 1 1 1</diffuse>
+      <specular>0.5 0.5 0.5 1</specular>
+      <attenuation>
+        <range>1000</range>
+        <constant>0.9</constant>
+        <linear>0.01</linear>
+        <quadratic>0.001</quadratic>
+      </attenuation>
+      <direction>-0.5 0.1 -0.9</direction>
+    </light>
+
+    <!-- ====== Ground Plane ====== -->
+    <model name="ground_plane">
+      <static>true</static>
+      <link name="link">
+        <collision name="collision">
+          <geometry>
+            <plane>
+              <normal>0 0 1</normal>
+              <size>50 50</size>
+            </plane>
+          </geometry>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <plane>
+              <normal>0 0 1</normal>
+              <size>50 50</size>
+            </plane>
+          </geometry>
+          <material>
+            <ambient>0.8 0.8 0.8 1</ambient>
+            <diffuse>0.8 0.8 0.8 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!--
+      Layout (top-down, X right, Y up):
+
+      Full building spans:
+        X: -4 to +14  (total 18m wide)
+        Y: -9 to +9   (total 18m tall)
+
+      Room 1: x=-4 to x=4,  y=0  to y=9   (8x9m, top-left)
+      Room 2: x=-4 to x=4,  y=-9 to y=0   (8x9m, bottom-left)
+      Room 3: x=4  to x=14, y=-9 to y=9   (10x18m, full-height right)
+
+      Single set of shared walls:
+        Perimeter: north(y=9), south(y=-9), west(x=-4), east(x=14)
+        Divider Room1/Room2: horizontal at y=0, x=-4 to x=4
+        Divider left/right:  vertical at x=4, y=-9 to y=9
+          - Door 1 (Room1->Room3): centred at y=4.5, width=1.5m
+          - Door 2 (Room2->Room3): centred at y=-4.5, width=1.5m
+    -->
+
+    <model name="building">
+      <static>true</static>
+
+      <!-- == PERIMETER WALLS == -->
+
+      <!-- North wall: y=9, spans full width -->
+      <link name="north_wall">
+        <pose>5 9 1.25 0 0 0</pose>
+        <collision name="collision">
+          <geometry><box><size>18.2 0.2 2.5</size></box></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>18.2 0.2 2.5</size></box></geometry>
+          <material><ambient>0.9 0.9 0.9 1</ambient><diffuse>0.9 0.9 0.9 1</diffuse></material>
+        </visual>
+      </link>
+
+      <!-- South wall: y=-9, spans full width -->
+      <link name="south_wall">
+        <pose>5 -9 1.25 0 0 0</pose>
+        <collision name="collision">
+          <geometry><box><size>18.2 0.2 2.5</size></box></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>18.2 0.2 2.5</size></box></geometry>
+          <material><ambient>0.9 0.9 0.9 1</ambient><diffuse>0.9 0.9 0.9 1</diffuse></material>
+        </visual>
+      </link>
+
+      <!-- West wall: x=-4, spans full height -->
+      <link name="west_wall">
+        <pose>-4 0 1.25 0 0 0</pose>
+        <collision name="collision">
+          <geometry><box><size>0.2 18.2 2.5</size></box></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>0.2 18.2 2.5</size></box></geometry>
+          <material><ambient>0.9 0.9 0.9 1</ambient><diffuse>0.9 0.9 0.9 1</diffuse></material>
+        </visual>
+      </link>
+
+      <!-- East wall: x=14, spans full height -->
+      <link name="east_wall">
+        <pose>14 0 1.25 0 0 0</pose>
+        <collision name="collision">
+          <geometry><box><size>0.2 18.2 2.5</size></box></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>0.2 18.2 2.5</size></box></geometry>
+          <material><ambient>0.9 0.9 0.9 1</ambient><diffuse>0.9 0.9 0.9 1</diffuse></material>
+        </visual>
+      </link>
+
+      <!-- == ROOM 1 / ROOM 2 DIVIDER == -->
+      <!-- Horizontal wall at y=0, x=-4 to x=4 (8m wide) -->
+      <link name="room12_divider">
+        <pose>0 0 1.25 0 0 0</pose>
+        <collision name="collision">
+          <geometry><box><size>8.0 0.2 2.5</size></box></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>8.0 0.2 2.5</size></box></geometry>
+          <material><ambient>0.9 0.9 0.9 1</ambient><diffuse>0.9 0.9 0.9 1</diffuse></material>
+        </visual>
+      </link>
+
+      <!-- == LEFT / RIGHT DIVIDER (x=4) == -->
+      <!-- Split into 4 segments around 2 doorways            -->
+      <!-- Door 1: y=3.75 to y=5.25  (centred at y=4.5)      -->
+      <!-- Door 2: y=-5.25 to y=-3.75 (centred at y=-4.5)    -->
+
+      <!-- Segment 1: y=5.25 to y=9 (top, above Door 1) -->
+      <link name="divider_seg1">
+        <pose>4 7.125 1.25 0 0 0</pose>
+        <collision name="collision">
+          <geometry><box><size>0.2 3.75 2.5</size></box></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>0.2 3.75 2.5</size></box></geometry>
+          <material><ambient>0.9 0.9 0.9 1</ambient><diffuse>0.9 0.9 0.9 1</diffuse></material>
+        </visual>
+      </link>
+
+      <!-- Segment 2: y=0 to y=3.75 (between Door 1 and centre divider) -->
+      <link name="divider_seg2">
+        <pose>4 1.875 1.25 0 0 0</pose>
+        <collision name="collision">
+          <geometry><box><size>0.2 3.75 2.5</size></box></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>0.2 3.75 2.5</size></box></geometry>
+          <material><ambient>0.9 0.9 0.9 1</ambient><diffuse>0.9 0.9 0.9 1</diffuse></material>
+        </visual>
+      </link>
+
+      <!-- Segment 3: y=-3.75 to y=0 (between centre divider and Door 2) -->
+      <link name="divider_seg3">
+        <pose>4 -1.875 1.25 0 0 0</pose>
+        <collision name="collision">
+          <geometry><box><size>0.2 3.75 2.5</size></box></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>0.2 3.75 2.5</size></box></geometry>
+          <material><ambient>0.9 0.9 0.9 1</ambient><diffuse>0.9 0.9 0.9 1</diffuse></material>
+        </visual>
+      </link>
+
+      <!-- Segment 4: y=-9 to y=-5.25 (bottom, below Door 2) -->
+      <link name="divider_seg4">
+        <pose>4 -7.125 1.25 0 0 0</pose>
+        <collision name="collision">
+          <geometry><box><size>0.2 3.75 2.5</size></box></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>0.2 3.75 2.5</size></box></geometry>
+          <material><ambient>0.9 0.9 0.9 1</ambient><diffuse>0.9 0.9 0.9 1</diffuse></material>
+        </visual>
+      </link>
+
+      <!-- Door 1 lintel (centred at y=4.5) -->
+      <link name="door1_lintel">
+        <pose>4 4.5 2.25 0 0 0</pose>
+        <collision name="collision">
+          <geometry><box><size>0.2 1.5 0.5</size></box></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>0.2 1.5 0.5</size></box></geometry>
+          <material><ambient>0.9 0.9 0.9 1</ambient><diffuse>0.9 0.9 0.9 1</diffuse></material>
+        </visual>
+      </link>
+
+      <!-- Door 2 lintel (centred at y=-4.5) -->
+      <link name="door2_lintel">
+        <pose>4 -4.5 2.25 0 0 0</pose>
+        <collision name="collision">
+          <geometry><box><size>0.2 1.5 0.5</size></box></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>0.2 1.5 0.5</size></box></geometry>
+          <material><ambient>0.9 0.9 0.9 1</ambient><diffuse>0.9 0.9 0.9 1</diffuse></material>
+        </visual>
+      </link>
+
+    </model>
+
+    <!-- ====================================================== -->
+    <!--                     OBSTACLES                          -->
+    <!-- ====================================================== -->
+
+    <!-- Red obstacle in Room 1 (centre ~(0, 5)) -->
+    <model name="obstacle_room1">
+      <static>true</static>
+      <pose>-1 6 0 0 0 0</pose>
+      <link name="link">
+        <pose>0 0 0.5 0 0 0</pose>
+        <collision name="collision">
+          <geometry><box><size>0.5 0.5 1.0</size></box></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>0.5 0.5 1.0</size></box></geometry>
+          <material><ambient>0.8 0.1 0.1 1</ambient><diffuse>0.8 0.1 0.1 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Blue obstacle in Room 2 (centre ~(0, -5)) -->
+    <model name="obstacle_room2">
+      <static>true</static>
+      <pose>-1 -6 0 0 0 0</pose>
+      <link name="link">
+        <pose>0 0 0.5 0 0 0</pose>
+        <collision name="collision">
+          <geometry><box><size>0.5 0.5 1.0</size></box></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>0.5 0.5 1.0</size></box></geometry>
+          <material><ambient>0.1 0.1 0.8 1</ambient><diffuse>0.1 0.1 0.8 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Green obstacle in Room 3 (centre ~(9, 0)) -->
+    <model name="obstacle_room3">
+      <static>true</static>
+      <pose>11 3 0 0 0 0</pose>
+      <link name="link">
+        <pose>0 0 0.5 0 0 0</pose>
+        <collision name="collision">
+          <geometry><box><size>0.5 0.5 1.0</size></box></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>0.5 0.5 1.0</size></box></geometry>
+          <material><ambient>0.1 0.8 0.1 1</ambient><diffuse>0.1 0.8 0.1 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- ====================================================== -->
+    <!--         Robot - starts in Room 3                       -->
+    <!-- ====================================================== -->
+    <model name="diff_drive">
+      <self_collide>true</self_collide>
+      <pose>10 0 0.35 0 0 0</pose>
+      <include merge="true">
+        <uri>/Adaptive_Behavior_Trees/ros_ws/src/gazebo_sim/gazebo_sim/models/diff_drive</uri>
+      </include>
+      <plugin
+        filename="ignition-gazebo-joint-state-publisher-system"
+        name="ignition::gazebo::systems::JointStatePublisher">
+      </plugin>
+
+      <plugin
+        filename="ignition-gazebo-pose-publisher-system"
+        name="ignition::gazebo::systems::PosePublisher">
+        <publish_link_pose>true</publish_link_pose>
+        <use_pose_vector_msg>true</use_pose_vector_msg>
+        <static_publisher>true</static_publisher>
+        <static_update_frequency>1</static_update_frequency>
+      </plugin>
+
+      <plugin
+        filename="ignition-gazebo-odometry-publisher-system"
+        name="ignition::gazebo::systems::OdometryPublisher">
+        <odom_frame>diff_drive/odom</odom_frame>
+        <robot_base_frame>diff_drive</robot_base_frame>
+      </plugin>
+    </model>
+
+  </world>
+</sdf>
