@@ -40,6 +40,10 @@ def expand(root, c, action_database, get_action_fn, scorer=None):
     else:
         sorted_actions = scorer.sort(c_set, valid_actions) # Sort actions by passed in cost metric
 
+    print(f"Expanding: {c.name}")
+    print(f"Valid actions: {[a for a, _ in valid_actions]}")
+    print(f"Sorted actions: {[a for a, _ in sorted_actions]}")
+
     for action, c_attr in sorted_actions:
         action_sequence = py_trees.composites.Sequence(name=f"a_seq_{expansion_counter}", memory=False)
         cond_i = Condition(f"{sorted(c_attr)}", c_attr)

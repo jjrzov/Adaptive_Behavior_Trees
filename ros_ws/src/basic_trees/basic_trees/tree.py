@@ -13,49 +13,49 @@ from basic_trees.algorithms import prune, expand
 MOCK = True    # Use mock actions or real actions
 
 Action_Database = {
-        "load_1"   : {"pre" : ["empty", "at_A"],            "add" : ["has_package_1"],  "del" : ["empty"]},
-        "unload_1" : {"pre" : ["has_package_1", "at_B"],    "add" : ["empty"],          "del" : ["has_package_1"]},
-        "move_A"   : {"pre" : [],                           "add" : ["at_A"],           "del" : ["at_B", "at_C"]},
-        "move_B"   : {"pre" : [],                           "add" : ["at_B"],           "del" : ["at_A", "at_C"]},
-        "move_C"   : {"pre" : [],                           "add" : ["at_C"],           "del" : ["at_A", "at_B"]},
+        "load"     : {"pre" : ["empty", "at_A"],            "add" : ["full"],                           "del" : ["empty", "package_at_A"]},
+        "unload"   : {"pre" : ["full", "at_B"],             "add" : ["empty", "package_at_B"],          "del" : ["full"]},
+        "move_A"   : {"pre" : [],                           "add" : ["at_A"],                           "del" : ["at_B", "at_C"]},
+        "move_B"   : {"pre" : [],                           "add" : ["at_B"],                           "del" : ["at_A", "at_C"]},
+        "move_C"   : {"pre" : [],                           "add" : ["at_C"],                           "del" : ["at_A", "at_B"]},
         } 
 
 
 def create_tree():
     # Create the root sequence
-    goal_condition = ["has_package_1"]
+    goal_condition = ["package_at_B"]
     root = Condition(f"goal\n{sorted(goal_condition)}", goal_condition)
 
     return root
 
 def setup_world(blackboard):
     # Static parameters for setting up tasks
-    blackboard.register_key(key="package_1_pickup_room", access=py_trees.common.Access.WRITE)
-    blackboard.package_1_pickup_room = "at_A"
+    # blackboard.register_key(key="package_pickup_room", access=py_trees.common.Access.WRITE)
+    # blackboard.package_1_pickup_room = "at_A"
 
-    blackboard.register_key(key="package_1_delivery_room", access=py_trees.common.Access.WRITE)
-    blackboard.package_1_delivery_room = "at_B"
+    # blackboard.register_key(key="package_delivery_room", access=py_trees.common.Access.WRITE)
+    # blackboard.package_1_delivery_room = "at_B"
 
     # Dynamic world state
     blackboard.register_key(key="world_state", access=py_trees.common.Access.WRITE)
-    blackboard.world_state = {"empty", "at_C"}
+    blackboard.world_state = {"empty", "at_C", "package_at_A"}
 
 def getAction(action_str, mock=MOCK):
     # Converts action name as a string to action object
     action_map_real = {
-        "load_1"   : Load,
-        "unload_1" : Unload,
-        "move_A"   : MoveA,
-        "move_B"   : MoveB,
-        "move_C"   : MoveC,
+        "load"   : lambda: Load(action_database=Action_Database),
+        "unload" : lambda: Unload(action_database=Action_Database),
+        "move_A" : lambda: MoveA(),
+        "move_B" : lambda: MoveB(),
+        "move_C" : lambda: MoveC(),
     }
     
     action_map_mock = {
-        "load_1"   : Load,
-        "unload_1" : Unload,
-        "move_A"   : MockMoveA,
-        "move_B"   : MockMoveB,
-        "move_C"   : MockMoveC,
+        "load"   : lambda: Load(action_database=Action_Database),
+        "unload" : lambda: Unload(action_database=Action_Database),
+        "move_A" : lambda: MockMoveA(),
+        "move_B" : lambda: MockMoveB(),
+        "move_C" : lambda: MockMoveC(),
     }
     
     action_map = action_map_mock if mock else action_map_real
@@ -83,8 +83,11 @@ def main():
         rclpy.shutdown()
         return
     
-    traverse = BFS()            # EDIT traversal function here
-    scorer = None     # EDIT cost metric for adding actions in expand here
+    # traverse = BFS()            # EDIT traversal function here
+    # scorer = None     # EDIT cost metric for adding actions in expand here
+    
+    traverse = DFS()            # EDIT traversal function here
+    scorer = ConditionCompletionScorer(Action_Database)     # EDIT cost metric for adding actions in expand here
 
     expanded_literals = set()
 

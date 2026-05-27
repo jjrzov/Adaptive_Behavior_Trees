@@ -2,8 +2,10 @@ import py_trees
 import py_trees_ros
 
 class Unload(py_trees.behaviour.Behaviour):
-    def __init__(self, name="Unload"):
+    def __init__(self, name="unload", action_database=None):
         super().__init__(name=name)
+        self.name = name
+        self.action_database = action_database
         
         # Set up blackboard client
         self.blackboard = self.attach_blackboard_client(name=name)
@@ -12,11 +14,6 @@ class Unload(py_trees.behaviour.Behaviour):
         self.blackboard.register_key(
             key="world_state",
             access=py_trees.common.Access.WRITE
-        )
-        # Read which room package is in
-        self.blackboard.register_key(
-            key="package_1_delivery_room",
-            access=py_trees.common.Access.READ
         )
 
     def setup(self, **kwargs):
@@ -33,13 +30,16 @@ class Unload(py_trees.behaviour.Behaviour):
 
     def update(self) -> py_trees.common.Status:
         # Called EVERY TICK while this behaviour is active
-        if (self.blackboard.package_1_delivery_room in self.blackboard.world_state) and ("has_package_1" in self.blackboard.world_state):   # pre conditions
-                self.blackboard.world_state.add("empty")    # add conditions
+        adding = self.action_database[self.name]['add']
+        deleting = self.action_database[self.name]['del']
 
-                self.blackboard.world_state.discard("has_package_1")    # discard conditions
-                return py_trees.common.Status.SUCCESS
-        
-        return py_trees.common.Status.FAILURE
+        for literal in adding:
+            self.blackboard.world_state.add(literal)    # add conditions
+
+        for literal in deleting:
+            self.blackboard.world_state.discard(literal)    # delete conditions
+                
+        return py_trees.common.Status.SUCCESS
 
     def terminate(self, new_status: py_trees.common.Status):
         # Called when leaving this behaviour for ANY reason
