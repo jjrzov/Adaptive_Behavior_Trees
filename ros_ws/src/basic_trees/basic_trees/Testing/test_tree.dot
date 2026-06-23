@@ -1,0 +1,23 @@
+digraph pastafarianism {
+ordering=out;
+graph [fontname="times-roman"];
+node [fontname="times-roman"];
+edge [fontname="times-roman"];
+fallback [fillcolor=cyan, fontcolor=black, fontsize=9, label=fallback, shape=octagon, style=filled];
+"goal\n['literal_0', 'literal_1', 'literal_2', 'literal_3', 'literal_4']" [fillcolor=gray, fontcolor=black, fontsize=9, label="goal\n['literal_0', 'literal_1', 'literal_2', 'literal_3', 'literal_4']", shape=ellipse, style=filled];
+fallback -> "goal\n['literal_0', 'literal_1', 'literal_2', 'literal_3', 'literal_4']";
+a_seq_11 [fillcolor=orange, fontcolor=black, fontsize=9, label=a_seq_11, shape=box, style=filled];
+fallback -> a_seq_11;
+"fallback*" [fillcolor=cyan, fontcolor=black, fontsize=9, label="fallback*", shape=octagon, style=filled];
+a_seq_11 -> "fallback*";
+"['literal_0', 'literal_1', 'literal_3', 'literal_4']" [fillcolor=gray, fontcolor=black, fontsize=9, label="['literal_0', 'literal_1', 'literal_3', 'literal_4']", shape=ellipse, style=filled];
+"fallback*" -> "['literal_0', 'literal_1', 'literal_3', 'literal_4']";
+a_seq_15 [fillcolor=orange, fontcolor=black, fontsize=9, label=a_seq_15, shape=box, style=filled];
+"fallback*" -> a_seq_15;
+"['literal_0', 'literal_3', 'literal_4']" [fillcolor=gray, fontcolor=black, fontsize=9, label="['literal_0', 'literal_3', 'literal_4']", shape=ellipse, style=filled];
+a_seq_15 -> "['literal_0', 'literal_3', 'literal_4']";
+action_0 [fillcolor=gray, fontcolor=black, fontsize=9, label=action_0, shape=ellipse, style=filled];
+a_seq_15 -> action_0;
+action_1 [fillcolor=gray, fontcolor=black, fontsize=9, label=action_1, shape=ellipse, style=filled];
+a_seq_11 -> action_1;
+}

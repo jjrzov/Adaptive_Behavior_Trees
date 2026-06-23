@@ -4,8 +4,8 @@ import random
 
 # Test Setup Parameters
 NUM_OF_LITERALS = 5   # Amount of literals 2^N possible states
-DISTANCE = 4    # Amount of states from start to goal
-ITERATIONS = 2  # Amount of times to branch from generated path
+DISTANCE = 10    # Amount of states from start to goal
+ITERATIONS = 10  # Amount of times to branch from generated path
 
 
 def generateAction(literals, state):

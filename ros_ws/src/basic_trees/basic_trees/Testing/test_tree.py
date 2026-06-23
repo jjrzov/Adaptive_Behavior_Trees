@@ -20,7 +20,12 @@ def createRoot(goal_state):
 
 def setupWorld(blackboard, init_state):
     # Dynamic world state
-    blackboard.register_key(key="world_state", access=py_trees.common.Access.WRITE)
+    if blackboard.is_registered(key="world_state", access=py_trees.common.Access.WRITE):
+        # Key already exists, need to reset it
+        blackboard.unset("world_state")
+    else:
+        blackboard.register_key(key="world_state", access=py_trees.common.Access.WRITE)
+    
     blackboard.world_state = init_state # init_state should be a set
 
 
@@ -29,7 +34,7 @@ def getAction(action_str, action_database):
     return TestAction(name=action_str, action_database=action_database)
 
 
-def runTree(init_state, goal_state, action_database):
+def runTree(init_state, goal_state, action_database, traverse=BFS(), scorer=None):
     # Create the tree
     root = createRoot(goal_state)
     tree = py_trees.trees.BehaviourTree(
@@ -43,9 +48,6 @@ def runTree(init_state, goal_state, action_database):
 
     # Set up the tree
     tree.setup()
-    
-    traverse = BFS()            # EDIT traversal function here
-    scorer = None     # EDIT cost metric for adding actions in expand here
     
     # traverse = DFS()            # EDIT traversal function here
     # scorer = ConditionCompletionScorer(Action_Database)     # EDIT cost metric for adding actions in expand here
@@ -80,16 +82,48 @@ def runTree(init_state, goal_state, action_database):
             tree.root = root
 
     py_trees.display.render_dot_tree(root, name="test_tree")
+    return root
 
+
+def getNodeCount(root):
+    # Traverse the entire tree and count the total amount of nodes
+    q = []  # Initialize queue
+    q.append(root)  # Add start node to queue
+    
+    count = 0
+
+    while len(q) != 0:
+        # Keep searching while queue is not empty
+        node = q.pop(0)
+        count += 1
+
+        if isinstance(node, py_trees.composites.Composite):
+            # Only composite types (actions) have children
+            q.extend(node.children)
+
+    print("Total Number of Nodes: ", count, "\n")
+    return count
 
 def main():
+    # Generate Solution
     all_literals = generateLiterals()
     states_database, action_database = generateSolution(all_literals)
-
     printTestSet(all_literals, states_database, action_database)
 
-    runTree(states_database[0], states_database[-1], action_database)
+    # Run the Tree
+    # Randomly Placed Actions
+    paper_root = runTree(states_database[0].copy(), states_database[-1], action_database)
 
+    # Sorted Actions
+    root = runTree(states_database[0].copy(), states_database[-1], action_database, 
+                   DFS(), ConditionCompletionScorer(action_database))
+
+    
+    # Record Metrics for solved trees
+    if paper_root: 
+        getNodeCount(paper_root)
+    if root:
+        getNodeCount(root)
 
 if __name__ == '__main__':
     main()
