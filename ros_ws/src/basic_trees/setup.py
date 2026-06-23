@@ -24,7 +24,8 @@ setup(
     },
     entry_points={
         'console_scripts': ['expand = basic_trees.tree:main',
-                            'paper = basic_trees.paper_tree:main'
+                            'paper = basic_trees.paper_tree:main',
+                            'tests = basic_trees.tests:main'
         ],
     },
 )

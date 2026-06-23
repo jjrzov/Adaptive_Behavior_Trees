@@ -1,5 +1,4 @@
 import py_trees
-import py_trees_ros
 
 class Condition(py_trees.behaviour.Behaviour):
     def __init__(self, name="Condition", preconditions={}):
@@ -14,13 +13,6 @@ class Condition(py_trees.behaviour.Behaviour):
             key="world_state",
             access=py_trees.common.Access.READ
         )
-
-    def setup(self, **kwargs):
-        # Called ONCE when the tree starts up
-        try:
-            self.node = kwargs['node']
-        except KeyError as e:
-            raise KeyError("Missing ROS node") from e
 
     def initialise(self):
         # Called EACH TIME this behaviour becomes active

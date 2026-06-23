@@ -47,7 +47,7 @@ def expand(root, c, action_database, get_action_fn, scorer=None):
     for action, c_attr in sorted_actions:
         action_sequence = py_trees.composites.Sequence(name=f"a_seq_{expansion_counter}", memory=False)
         cond_i = Condition(f"{sorted(c_attr)}", c_attr)
-        action_i = get_action_fn(action)
+        action_i = get_action_fn(action, action_database)
         action_sequence.add_children([cond_i, action_i])
 
         subtree_tau.add_children([action_sequence])

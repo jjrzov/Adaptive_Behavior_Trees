@@ -21,38 +21,33 @@ Action_Database = {
         } 
 
 
-def create_tree():
+def createRoot():
     # Create the root sequence
     goal_condition = ["package_at_B"]
     root = Condition(f"goal\n{sorted(goal_condition)}", goal_condition)
 
     return root
 
-def setup_world(blackboard):
-    # Static parameters for setting up tasks
-    # blackboard.register_key(key="package_pickup_room", access=py_trees.common.Access.WRITE)
-    # blackboard.package_1_pickup_room = "at_A"
 
-    # blackboard.register_key(key="package_delivery_room", access=py_trees.common.Access.WRITE)
-    # blackboard.package_1_delivery_room = "at_B"
-
+def setupWorld(blackboard):
     # Dynamic world state
     blackboard.register_key(key="world_state", access=py_trees.common.Access.WRITE)
     blackboard.world_state = {"empty", "at_C", "package_at_A"}
 
-def getAction(action_str, mock=MOCK):
+
+def getAction(action_str, action_database, mock=MOCK):
     # Converts action name as a string to action object
     action_map_real = {
-        "load"   : lambda: Load(action_database=Action_Database),
-        "unload" : lambda: Unload(action_database=Action_Database),
+        "load"   : lambda: Load(action_database=action_database),
+        "unload" : lambda: Unload(action_database=action_database),
         "move_A" : lambda: MoveA(),
         "move_B" : lambda: MoveB(),
         "move_C" : lambda: MoveC(),
     }
     
     action_map_mock = {
-        "load"   : lambda: Load(action_database=Action_Database),
-        "unload" : lambda: Unload(action_database=Action_Database),
+        "load"   : lambda: Load(action_database=action_database),
+        "unload" : lambda: Unload(action_database=action_database),
         "move_A" : lambda: MockMoveA(),
         "move_B" : lambda: MockMoveB(),
         "move_C" : lambda: MockMoveC(),
@@ -61,11 +56,12 @@ def getAction(action_str, mock=MOCK):
     action_map = action_map_mock if mock else action_map_real
     return action_map[action_str]()
 
+
 def main():
     rclpy.init()
 
     # Create the tree
-    root = create_tree()
+    root = createRoot()
     tree = py_trees_ros.trees.BehaviourTree(
         root=root,
         unicode_tree_debug=True
@@ -74,7 +70,7 @@ def main():
     # Initialise the blackboard BEFORE setting up the tree
     blackboard = py_trees.blackboard.Client(name="Init")
 
-    setup_world(blackboard) # Define world literals
+    setupWorld(blackboard) # Define world literals
 
     # Set up the tree
     try:
@@ -83,11 +79,11 @@ def main():
         rclpy.shutdown()
         return
     
-    # traverse = BFS()            # EDIT traversal function here
-    # scorer = None     # EDIT cost metric for adding actions in expand here
+    traverse = BFS()            # EDIT traversal function here
+    scorer = None     # EDIT cost metric for adding actions in expand here
     
-    traverse = DFS()            # EDIT traversal function here
-    scorer = ConditionCompletionScorer(Action_Database)     # EDIT cost metric for adding actions in expand here
+    # traverse = DFS()            # EDIT traversal function here
+    # scorer = ConditionCompletionScorer(Action_Database)     # EDIT cost metric for adding actions in expand here
 
     expanded_literals = set()
 
