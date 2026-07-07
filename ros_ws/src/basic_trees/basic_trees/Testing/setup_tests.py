@@ -3,7 +3,7 @@
 import random
 
 # Test Setup Parameters
-NUM_OF_LITERALS = 5   # Amount of literals 2^N possible states
+NUM_OF_LITERALS = 10   # Amount of literals 2^N possible states
 DISTANCE = 10    # Amount of states from start to goal
 ITERATIONS = 10  # Amount of times to branch from generated path
 
@@ -29,11 +29,11 @@ def generateAction(literals, state):
 
     return {"pre": pre, "add": add, "del": dels}
 
-def generateLiterals():
+def generateLiterals(num_literals=NUM_OF_LITERALS):
     # Create list of all possible literals
-    return [f"literal_{i}" for i in range(NUM_OF_LITERALS)]
+    return [f"literal_{i}" for i in range(num_literals)]
 
-def generateSolution(all_literals):
+def generateSolution(all_literals, distance=DISTANCE, iterations=ITERATIONS):
     # Step 1: Generate Initial State
     curr_state = set()
 
@@ -45,22 +45,24 @@ def generateSolution(all_literals):
     states_database = []    # Store path states
     action_database = {}    # Store possible actions
 
-    for i in range(DISTANCE):
+    for i in range(distance):
         # Iteratively generate a path
 
         # Step 2: Generate a Random Action
         rand_action = generateAction(all_literals, curr_state)
 
         # Step 3: Calculate Successor State
-        next_state = curr_state.union(rand_action["add"] - rand_action["del"])
+        next_state = curr_state.union(rand_action["add"]) - rand_action["del"]
         
         # Store info
         action_database[f"action_{i}"] = rand_action # Store generated action in database
         states_database.append(curr_state)
         curr_state = next_state     # Iterate states
 
+    states_database.append(curr_state)  # Append final state
+
     # Step 4: Randomly generate an action from a random existing state
-    for i in range(ITERATIONS):
+    for i in range(iterations):
         rand_state = random.choice(states_database)
         rand_action_branch = generateAction(all_literals, rand_state)
         action_database[f"action_branch_{i}"] = rand_action_branch # Store generated action in database

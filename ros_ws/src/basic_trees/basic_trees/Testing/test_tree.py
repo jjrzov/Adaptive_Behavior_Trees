@@ -52,19 +52,20 @@ def runTree(init_state, goal_state, action_database, traverse=BFS(), scorer=None
     # Set up the tree
     tree.setup()
     
-    # traverse = DFS()            # EDIT traversal function here
-    # scorer = ConditionCompletionScorer(Action_Database)     # EDIT cost metric for adding actions in expand here
-
     expanded_literals = set()
+    total_prunes = 0
+    total_duplicates = 0
+    condition_size_trace = []  # len(c.preconditions) for each condition expanded, in order
+    branching_trace = []  # len(sorted_actions) for each corresponding expand() call
 
     while root.status != py_trees.common.Status.SUCCESS:
         # Handle tree returning RUNNING or FAILURE
         tree.tick()
 
 
-        print(f"--- tick ---")
-        print(f"status: {root.status}")
-        print(f"world_state: {blackboard.world_state}")
+        # print(f"--- tick ---")
+        # print(f"status: {root.status}")
+        # print(f"world_state: {blackboard.world_state}")
 
 
         if root.status == py_trees.common.Status.FAILURE:
@@ -72,19 +73,29 @@ def runTree(init_state, goal_state, action_database, traverse=BFS(), scorer=None
             next_condition = traverse.getNextCondition(root, expanded_literals)
 
             if next_condition == None:
-                print("No more conditions to expand - unsolvable")
+                # print("No more conditions to expand - unsolvable")
                 return False
             
-            print(f"next_condition: {next_condition.name}")
+            # print(f"next_condition: {next_condition.name}")
 
             # Add condition literals to expanded set
             expanded_literals.add(frozenset(next_condition.preconditions))  # Needs to be frozen to keep literals grouped as conditions
             
-            root = expand(root, next_condition, action_database, getAction, scorer)
-            prune(root, expanded_literals)  # Remove sequence structures that have already been expanded elsewhere
+            condition_size_trace.append(len(next_condition.preconditions))
+
+            root, dup_count, branching_factor = expand(root, next_condition, action_database, getAction, scorer)
+            branching_trace.append(branching_factor)
+            total_duplicates += dup_count
+            total_prunes += prune(root, expanded_literals)
+
+            # prune(root, expanded_literals)  # Remove sequence structures that have already been expanded elsewhere
             tree.root = root
 
-    py_trees.display.render_dot_tree(root, name=f"test_tree {counter}")
+    # py_trees.display.render_dot_tree(root, name=f"test_tree {counter}")
+    root.total_prunes = total_prunes
+    root.total_duplicates = total_duplicates
+    root.condition_size_trace = condition_size_trace
+    root.branching_trace = branching_trace
     return root
 
 
@@ -104,31 +115,21 @@ def getNodeCount(root):
             # Only composite types (actions) have children
             q.extend(node.children)
 
-    print("Total Number of Nodes: ", count, "\n")
+    # print("Total Number of Nodes: ", count, "\n")
     return count
 
 def main():
-    # Generate Solution
-    all_literals = generateLiterals()
-    states_database, action_database = generateSolution(all_literals)
+    # Generate Dataset
+    all_literals = generateLiterals(100)
+    states_database, action_database = generateSolution(all_literals, 10, 10)
     printTestSet(all_literals, states_database, action_database)
 
     # Run the Tree
-    # Randomly Placed Actions
-    paper_root = runTree(states_database[0].copy(), states_database[-1], action_database)
+    root = runTree(states_database[0].copy(), states_database[-1], action_database)
 
-    # Sorted Actions
-    counter += 1
-    root = runTree(states_database[0].copy(), states_database[-1], action_database, 
-                   DFS(), ConditionCompletionScorer(action_database))
+    # Gather Data
+    getNodeCount(root)
 
-    counter += 1
-    
-    # Record Metrics for solved trees
-    if paper_root: 
-        getNodeCount(paper_root)
-    if root:
-        getNodeCount(root)
 
 if __name__ == '__main__':
     main()
