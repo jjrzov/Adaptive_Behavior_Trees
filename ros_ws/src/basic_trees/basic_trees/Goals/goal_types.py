@@ -15,6 +15,14 @@ class GoalCondition(Condition):
         super().__init__(preconditions=preconditions)
 
 
+# Alternate named classes to allow for goal branch policies when expand() is called
+class GoalSequence(py_trees.composites.Sequence):
+    pass
+
+class GoalSelector(py_trees.composites.Selector):
+    pass
+
+
 def buildGoalTree(term):
     # Build the goal tree from the input interface
     children = []
@@ -52,7 +60,7 @@ def flatten(root):
 
 
 def buildBaseTree(term):
-    # Build the initial tree shape based on the goal
+    # Build the initial tree shape based on the goal                            TODO: Iterative ANDs are still separate conditions not one big condition
     if isinstance(term, str):
         return Condition(name=term, preconditions={term})
     else:
@@ -64,11 +72,11 @@ def buildBaseTree(term):
             return Condition(name=name, preconditions=res)  # One condition with all literals
         else:
             if isinstance(term, AND):
-                root = py_trees.composites.Sequence(name="Seq", memory=False)
+                root = GoalSequence(name="Seq", memory=False)
             else:
-                root = py_trees.composites.Selector(name="FB", memory=False)
+                root = GoalSelector(name="FB", memory=False)
 
-            for item in res:                                # TODO: NO ORDER IN HOW LITERALS ARE PLACED, COULD MATTER FOR SEQUENCE OF AND TERMS like: AND(1st, 2nd)
+            for item in res:                                                      # TODO: NO ORDER IN HOW LITERALS ARE PLACED, COULD MATTER FOR SEQUENCE OF AND TERMS like: AND(1st, 2nd)
                 if isinstance(item, str):
                     child = Condition(name=item, preconditions={item})
                 else:

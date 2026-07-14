@@ -1,4 +1,5 @@
 import py_trees
+import math
 
 from basic_trees.Conditions.condition import Condition
 
@@ -38,3 +39,18 @@ class DFS(Traversal):
                     return result
         
         return None # All condition nodes have been expanded
+    
+class CheapestFirst(Traversal):
+    def getNextCondition(self, root, expanded_literals):
+        best_leaf, best_cost = self.cost(root, expanded_literals)
+        
+        if best_leaf == None or best_cost == math.inf:
+            # All condition nodes have been expanded
+            return None
+        
+        return best_leaf    # Condition to be expanded
+    
+    def cost(self, node, expanded_literals):
+        if isinstance(node, Condition):
+            if frozenset(node.preconditions) not in expanded_literals:
+                return (node, len(node.preconditions - node.blackboard.world_state))

@@ -92,10 +92,10 @@ def runAllCases():
             f"std_size={result['std_tree_size']:.1f}, "
             f"avg_prunes={result['avg_prunes']:.1f}, "
             f"std_prunes={result['std_prunes']:.1f}, "
-            f"avg_dupes={result['avg_duplicates']:.1f}, "
-            f"std_dupes={result['std_duplicates']:.1f}, "
-            f"avg_max_cset={result['avg_max_condition_size']:.1f}, "
-            f"avg_branching={result['avg_mean_branching']:.2f}, "
+            # f"avg_dupes={result['avg_duplicates']:.1f}, "
+            # f"std_dupes={result['std_duplicates']:.1f}, "
+            # f"avg_max_cset={result['avg_max_condition_size']:.1f}, "
+            # f"avg_branching={result['avg_mean_branching']:.2f}, "
             f"failures={result['failures']}"
         )
  

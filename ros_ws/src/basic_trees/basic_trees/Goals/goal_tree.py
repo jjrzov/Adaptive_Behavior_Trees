@@ -80,20 +80,29 @@ def runTree(init_state, goal_term, action_database, traverse=BFS(), scorer=None)
             # Add condition literals to expanded set
             expanded_literals.add(frozenset(next_condition.preconditions))  # Needs to be frozen to keep literals grouped as conditions
             
-            root = expand(root, next_condition, action_database, getAction, scorer)
+            root, _, _ = expand(root, next_condition, action_database, getAction, scorer)
             prune(root, expanded_literals)  # Remove sequence structures that have already been expanded elsewhere
             tree.root = root
 
-    py_trees.display.render_dot_tree(root, name=f"test_tree {counter}")
+    py_trees.display.render_dot_tree(root, name=f"Paper_Test_w_DEAD_OR")
     return root
 
 
 def main():
-    eq = AND('a', AND('b', AND('c', AND('d', OR('e', 'f')))))
+    # eq = AND('a', 'b')
+    # tree = buildBaseTree(eq)
+    # py_trees.display.render_dot_tree(tree, name=f"Goal_Base_Tree")
 
-    tree = buildBaseTree(eq)
-    py_trees.display.render_dot_tree(tree, name=f"Goal_Base_Tree")
+    goal = OR("Dead_Task", "At(b, ab)")
+    init_state = {"At(b, pb)", "At(s, ps)", "Free(ab)", "Free(as)"}
 
+    action_database = {
+        "move(b, ab)" : {"pre" : ["Free(ab)", "WayClear"],    "add" : ["At(b, ab)"],               "del" : ["Free(ab)", "At(b, pb)"]},
+        "move(s, ab)" : {"pre" : ["Free(ab)"],                "add" : ["At(s, ab)", "WayClear"],   "del" : ["Free(ab)", "At(s, ps)"]},
+        "move(s, as)" : {"pre" : ["Free(as)"],                "add" : ["At(s, as)", "WayClear"],   "del" : ["Free(as)", "At(s, ps)"]},
+        }
+
+    root = runTree(init_state, goal, action_database)
 
 if __name__ == '__main__':
     main()

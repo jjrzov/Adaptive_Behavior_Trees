@@ -66,6 +66,7 @@ def expand(root, c, action_database, get_action_fn, scorer=None):
     
 def prune(root, expanded_literals):
     # Go through the tree and remove and conditions that have already been expanded elsewhere
+    # Do not want to prune conditions apart of the initial Goal Tree
     prune_nodes = []    # Store nodes to be removed
     q = []  # Initialize queue
     q.append(root)  # Add start node to queue
@@ -73,10 +74,10 @@ def prune(root, expanded_literals):
     while len(q) != 0:
         # Keep searching while queue is not empty
         node = q.pop(0)
-        if isinstance(node, py_trees.composites.Sequence):
+        if type(node) is py_trees.composites.Sequence:      # Need exact type comparison because GoalSequence is a subclass of Sequence
             # if node is a sequence check that first child is a condition
             first_child = node.children[0]
-            if isinstance(first_child, Condition):
+            if type(first_child) is Condition:
                 # if its a condition check that if it has already been expanded
                 if frozenset(first_child.preconditions) in expanded_literals:
                     # Already expanded condition node
