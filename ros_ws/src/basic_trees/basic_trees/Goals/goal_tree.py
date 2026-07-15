@@ -4,7 +4,7 @@ import py_trees
 
 from basic_trees.Conditions.condition import Condition
 from basic_trees.Actions import TestAction
-from basic_trees.traverse import BFS, DFS
+from basic_trees.traverse import *
 from basic_trees.action_scorer import ConditionCompletionScorer, TimeScorer
 from basic_trees.algorithms import prune, expand
 
@@ -52,7 +52,7 @@ def runTree(init_state, goal_term, action_database, traverse=BFS(), scorer=None)
     # Set up the tree
     tree.setup()
 
-    # traverse = DFS()            # EDIT traversal function here
+    # traverse = CheapestFirst()           # EDIT traversal function here
     # scorer = ConditionCompletionScorer(Action_Database)     # EDIT cost metric for adding actions in expand here
 
     expanded_literals = set()
@@ -89,11 +89,11 @@ def runTree(init_state, goal_term, action_database, traverse=BFS(), scorer=None)
 
 
 def main():
-    # eq = AND('a', 'b')
+    # eq = OR(AND("L1", "L2"), "At(b, ab)")
     # tree = buildBaseTree(eq)
     # py_trees.display.render_dot_tree(tree, name=f"Goal_Base_Tree")
 
-    goal = OR("Dead_Task", "At(b, ab)")
+    goal = OR(AND("L1", "L2"), "At(b, ab)")
     init_state = {"At(b, pb)", "At(s, ps)", "Free(ab)", "Free(as)"}
 
     action_database = {
@@ -101,6 +101,10 @@ def main():
         "move(s, ab)" : {"pre" : ["Free(ab)"],                "add" : ["At(s, ab)", "WayClear"],   "del" : ["Free(ab)", "At(s, ps)"]},
         "move(s, as)" : {"pre" : ["Free(as)"],                "add" : ["At(s, as)", "WayClear"],   "del" : ["Free(as)", "At(s, ps)"]},
         }
+
+
+    action_database["Action_L1"] = {"pre": set(), "add": {"L1"}, "del": set()}
+    action_database["Action_L2"] = {"pre": set(), "add": {"L2"}, "del": set()}
 
     root = runTree(init_state, goal, action_database)
 
