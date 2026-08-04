@@ -16,9 +16,8 @@ def generateAction(literals, state):
         if literal in state:
             if random.random() > 0.5:
                 pre.add(literal)
-            else:
-                if random.random() > 0.5:
-                    dels.add(literal)
+            if random.random() > 0.5:
+                dels.add(literal)
         else:
             # Literals not in state
             if random.random() > 0.5:
@@ -62,10 +61,13 @@ def generateSolution(all_literals, distance=DISTANCE, iterations=ITERATIONS):
     states_database.append(curr_state)  # Append final state
 
     # Step 4: Randomly generate an action from a random existing state
+    states_pool = list(states_database)
+
     for i in range(iterations):
-        rand_state = random.choice(states_database)
+        rand_state = random.choice(states_pool)
         rand_action_branch = generateAction(all_literals, rand_state)
         action_database[f"action_branch_{i}"] = rand_action_branch # Store generated action in database
+        states_pool.append(rand_state.union(rand_action_branch["add"]) - rand_action_branch["del"]) # Calculate branching successor state
 
     return states_database, action_database
 

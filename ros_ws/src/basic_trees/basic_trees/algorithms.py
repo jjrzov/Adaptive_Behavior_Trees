@@ -5,6 +5,10 @@ from basic_trees.Conditions.condition import Condition
 
 expansion_counter = 0
 
+DEDUP_C_ATTR = True     # If TRUE, don't add an action if its c_attr has already been added
+SUBSET_PRUNE = True     # If TRUE, prune based off condition being a subset or an exact match of an already expanded condition
+
+
 def expand(root, c, action_database, get_action_fn, scorer=None):
     global expansion_counter
 
@@ -21,6 +25,9 @@ def expand(root, c, action_database, get_action_fn, scorer=None):
     subtree_tau.add_children([c])   # Assign new parent for condition
 
     valid_actions = []
+
+    superset_count = 0
+
     for action in action_database:
         # Get action literals
         a_pre = set(action_database[action]["pre"])
@@ -32,6 +39,9 @@ def expand(root, c, action_database, get_action_fn, scorer=None):
     
         if check1 and check2:
             c_attr = a_pre.union(c_set - a_add)
+
+            if c_set <= c_attr:
+                superset_count += 1
             
             valid_actions.append((action, c_attr))    # Only want to sort actions that help solve the condition
 
@@ -47,7 +57,16 @@ def expand(root, c, action_database, get_action_fn, scorer=None):
     unique_c_attrs = set(frozenset(c_attr) for _, c_attr in sorted_actions)
     duplicate_count = len(sorted_actions) - len(unique_c_attrs)
 
+
+    seen_c_attrs = set()
+
     for action, c_attr in sorted_actions:
+        if DEDUP_C_ATTR:
+            key = frozenset(c_attr)
+            if key in seen_c_attrs:
+                continue        # An identical region of attraction already present
+            seen_c_attrs.add(key)
+
         action_sequence = py_trees.composites.Sequence(name=f"a_seq_{expansion_counter}", memory=False)
         cond_i = Condition(f"{sorted(c_attr)}", c_attr)
         action_i = get_action_fn(action, action_database)
@@ -56,38 +75,46 @@ def expand(root, c, action_database, get_action_fn, scorer=None):
         subtree_tau.add_children([action_sequence])
         expansion_counter += 1
 
+        
+
     # Check if condition was root
     if is_root:
-        return subtree_tau, duplicate_count, len(sorted_actions)
+        return subtree_tau, duplicate_count, len(sorted_actions), superset_count
     else:
         c_old_parent.prepend_child(subtree_tau)
-        return root, duplicate_count, len(sorted_actions)
-    
-    
+        return root, duplicate_count, len(sorted_actions), superset_count
+
+
 def prune(root, expanded_literals):
     # Go through the tree and remove and conditions that have already been expanded elsewhere
     # Do not want to prune conditions apart of the initial Goal Tree
     prune_nodes = []    # Store nodes to be removed
-    q = []  # Initialize queue
-    q.append(root)  # Add start node to queue
 
-    while len(q) != 0:
+    q = [root]  # Initialize queue with start node
+
+    while q:
         # Keep searching while queue is not empty
         node = q.pop(0)
-        if type(node) is py_trees.composites.Sequence:      # Need exact type comparison because GoalSequence is a subclass of Sequence
+        if type(node) is py_trees.composites.Sequence:  # Need exact type comparison because GoalSequence is a subclass of Sequence
             # if node is a sequence check that first child is a condition
             first_child = node.children[0]
             if type(first_child) is Condition:
-                # if its a condition check that if it has already been expanded
-                if frozenset(first_child.preconditions) in expanded_literals:
-                    # Already expanded condition node
-                    prune_nodes.append(node)  # Remove sequence from tree
-        
+                fc = frozenset(first_child.preconditions)
+
+                if SUBSET_PRUNE:
+                    # Prune if an already expanded condition is an exact match or subset of this one
+                    pruned = any(e <= fc for e in expanded_literals)
+                else:
+                    # Only prune if exact match has already been expanded
+                    pruned = fc in expanded_literals
+
+                if pruned:
+                    prune_nodes.append(node)
+
         if isinstance(node, py_trees.composites.Composite):
             q.extend(node.children)
 
-    # Remove nodes in prune nodes
     for node in prune_nodes:
         node.parent.remove_child(node)
-    
+
     return len(prune_nodes)

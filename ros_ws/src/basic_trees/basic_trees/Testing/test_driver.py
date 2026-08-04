@@ -31,6 +31,9 @@ def runCase(case):
     duplicate_counts = []
     max_condition_sizes = []
     mean_branching_factors = []
+    mean_superset_factors = []
+    expansions = []
+
     failures = 0
  
     while len(sizes) < TARGET_SUCCESSES:
@@ -51,6 +54,10 @@ def runCase(case):
  
         condition_sizes = getattr(root, "condition_size_trace", [])
         branching = getattr(root, "branching_trace", [])
+        supersets = getattr(root, "superset_trace", [])
+        expansions.append(getattr(root, "expansion_count", 0))
+        if supersets:
+            mean_superset_factors.append(statistics.mean(supersets))
         if condition_sizes:
             max_condition_sizes.append(max(condition_sizes))
         if branching:
@@ -73,6 +80,8 @@ def runCase(case):
         "std_duplicates": statistics.stdev(duplicate_counts),
         "avg_max_condition_size": statistics.mean(max_condition_sizes) if max_condition_sizes else 0,
         "avg_mean_branching": statistics.mean(mean_branching_factors) if mean_branching_factors else 0,
+        "avg_mean_superset": statistics.mean(mean_superset_factors) if mean_superset_factors else 0,
+        "avg_expansions": statistics.mean(expansions),
         "failures": failures,
         "sizes": sizes,          # raw per-trial sizes, kept for later inspection if needed
         "prune_counts": prune_counts,  # raw per-trial prune counts, same reason
@@ -90,12 +99,14 @@ def runAllCases():
             f"Case {result['case']}: "
             f"avg_size={result['avg_tree_size']:.1f}, "
             f"std_size={result['std_tree_size']:.1f}, "
-            f"avg_prunes={result['avg_prunes']:.1f}, "
-            f"std_prunes={result['std_prunes']:.1f}, "
+            # f"avg_prunes={result['avg_prunes']:.1f}, "
+            # f"std_prunes={result['std_prunes']:.1f}, "
             # f"avg_dupes={result['avg_duplicates']:.1f}, "
             # f"std_dupes={result['std_duplicates']:.1f}, "
             # f"avg_max_cset={result['avg_max_condition_size']:.1f}, "
             # f"avg_branching={result['avg_mean_branching']:.2f}, "
+            # f"avg_superset={result['avg_mean_superset']:.2f}, "
+            # f"avg_exp={result['avg_expansions']:.1f}, "
             f"failures={result['failures']}"
         )
  
