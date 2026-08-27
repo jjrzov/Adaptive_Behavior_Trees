@@ -62,9 +62,9 @@ def runTree(init_state, goal_term, action_database, traverse=BFS(), scorer=None)
         tree.tick()
 
 
-        print(f"--- tick ---")
-        print(f"status: {root.status}")
-        print(f"world_state: {blackboard.world_state}")
+        # print(f"--- tick ---")
+        # print(f"status: {root.status}")
+        # print(f"world_state: {blackboard.world_state}")
 
 
         if root.status == py_trees.common.Status.FAILURE:
@@ -75,16 +75,16 @@ def runTree(init_state, goal_term, action_database, traverse=BFS(), scorer=None)
                 print("No more conditions to expand - unsolvable")
                 return False
             
-            print(f"next_condition: {next_condition.name}")
+            # print(f"next_condition: {next_condition.name}")
 
             # Add condition literals to expanded set
             expanded_literals.add(frozenset(next_condition.preconditions))  # Needs to be frozen to keep literals grouped as conditions
             
-            root, _, _ = expand(root, next_condition, action_database, getAction, scorer)
+            root = expand(root, next_condition, action_database, getAction, scorer)
             prune(root, expanded_literals)  # Remove sequence structures that have already been expanded elsewhere
             tree.root = root
 
-    py_trees.display.render_dot_tree(root, name=f"Paper_Test_w_DEAD_OR")
+    # py_trees.display.render_dot_tree(root, name=f"Paper_Test_w_DEAD_OR")
     return root
 
 

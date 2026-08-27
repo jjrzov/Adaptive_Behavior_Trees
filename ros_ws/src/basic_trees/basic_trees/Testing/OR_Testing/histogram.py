@@ -21,7 +21,7 @@ def recordData(case):
         )
  
         # Record data
-        sample = getDisjunctSets(states_database, action_database)
+        sample = getDisjunctDists(states_database, action_database)
         if (sample == None):
             invalid += 1
             continue
@@ -94,6 +94,30 @@ def getDisjunctSets(states_database, action_database):
                 or (d1.issubset(d2) or d2.issubset(d1))):
             continue
 
+        return (d1, d2)
+
+    return None
+
+
+def getDisjunctDists(states_database, action_database):
+    # Pick 2 random and distinct states
+    max_attempts = 50
+
+    for _ in range(max_attempts):
+        s1 = set(random.choice(states_database))
+        s2 = set(random.choice(states_database))
+
+        if (s2 == s1):
+            continue
+
+        # Get a random subset of both
+        d1 = getRandomSubset(s1)                        
+        d2 = getRandomSubset(s2)
+
+        if (d1.issubset(states_database[0]) or d2.issubset(states_database[0]) 
+                or (d1.issubset(d2) or d2.issubset(d1))):
+            continue
+
         # Caluclate distance from a state containing the disjuct set and the root
         d1 = distToSubset(states_database, action_database, d1)
         d2 = distToSubset(states_database, action_database, d2)
@@ -127,7 +151,7 @@ def plotSpread(runs, case):
 
 
 def main():
-    test_case = {"case": 1, "literals": 100, "distance": 50, "iterations": 10}
+    test_case = {"case": 1, "literals": 100, "distance": 100, "iterations": 10}
 
     runs, invalid, infs = recordData(test_case)
 

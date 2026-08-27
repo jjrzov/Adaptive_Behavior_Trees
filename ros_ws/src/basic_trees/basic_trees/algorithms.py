@@ -5,7 +5,7 @@ from basic_trees.Conditions.condition import Condition
 
 expansion_counter = 0
 
-DEDUP_C_ATTR = True     # If TRUE, don't add an action if its c_attr has already been added
+DEDUP_C_ATTR = False     # If TRUE, don't add an action if its c_attr has already been added
 SUBSET_PRUNE = True     # If TRUE, prune based off condition being a subset or an exact match of an already expanded condition
 
 
@@ -79,10 +79,10 @@ def expand(root, c, action_database, get_action_fn, scorer=None):
 
     # Check if condition was root
     if is_root:
-        return subtree_tau, duplicate_count, len(sorted_actions), superset_count
+        return subtree_tau
     else:
         c_old_parent.prepend_child(subtree_tau)
-        return root, duplicate_count, len(sorted_actions), superset_count
+        return root
 
 
 def prune(root, expanded_literals):
