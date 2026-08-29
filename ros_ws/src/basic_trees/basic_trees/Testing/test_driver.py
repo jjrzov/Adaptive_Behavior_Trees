@@ -42,7 +42,7 @@ def runCase(case):
             all_literals, case["distance"], case["iterations"]
         )
  
-        root = runTree(states_database[0].copy(), states_database[-1], action_database)
+        root, _ = runTree(states_database[0].copy(), states_database[-1], action_database)
  
         if root is False:
             failures += 1

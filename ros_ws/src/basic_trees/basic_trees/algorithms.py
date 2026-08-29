@@ -54,9 +54,8 @@ def expand(root, c, action_database, get_action_fn, scorer=None):
     # print(f"Valid actions: {[a for a, _ in valid_actions]}")
     # print(f"Sorted actions: {[a for a, _ in sorted_actions]}")
 
-    unique_c_attrs = set(frozenset(c_attr) for _, c_attr in sorted_actions)
-    duplicate_count = len(sorted_actions) - len(unique_c_attrs)
-
+    # unique_c_attrs = set(frozenset(c_attr) for _, c_attr in sorted_actions)
+    # duplicate_count = len(sorted_actions) - len(unique_c_attrs)
 
     seen_c_attrs = set()
 

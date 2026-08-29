@@ -10,8 +10,6 @@ from basic_trees.algorithms import prune, expand
 
 from basic_trees.Goals.goal_types import *
 
-counter = 0
-
 
 def createRoot(goal_state):
     # Create the root sequence
@@ -53,9 +51,9 @@ def runTree(init_state, goal_term, action_database, traverse=BFS(), scorer=None)
     tree.setup()
 
     # traverse = CheapestFirst()           # EDIT traversal function here
-    # scorer = ConditionCompletionScorer(Action_Database)     # EDIT cost metric for adding actions in expand here
 
     expanded_literals = set()
+    expansion_count = 0
 
     while root.status != py_trees.common.Status.SUCCESS:
         # Handle tree returning RUNNING or FAILURE
@@ -72,8 +70,8 @@ def runTree(init_state, goal_term, action_database, traverse=BFS(), scorer=None)
             next_condition = traverse.getNextCondition(root, expanded_literals)
 
             if next_condition == None:
-                print("No more conditions to expand - unsolvable")
-                return False
+                # print("No more conditions to expand - unsolvable")
+                return False, expansion_count
             
             # print(f"next_condition: {next_condition.name}")
 
@@ -81,11 +79,14 @@ def runTree(init_state, goal_term, action_database, traverse=BFS(), scorer=None)
             expanded_literals.add(frozenset(next_condition.preconditions))  # Needs to be frozen to keep literals grouped as conditions
             
             root = expand(root, next_condition, action_database, getAction, scorer)
+
             prune(root, expanded_literals)  # Remove sequence structures that have already been expanded elsewhere
+            expansion_count += 1
+
             tree.root = root
 
     # py_trees.display.render_dot_tree(root, name=f"Paper_Test_w_DEAD_OR")
-    return root
+    return root, expansion_count, set(blackboard.world_state)
 
 
 def main():
@@ -106,7 +107,7 @@ def main():
     action_database["Action_L1"] = {"pre": set(), "add": {"L1"}, "del": set()}
     action_database["Action_L2"] = {"pre": set(), "add": {"L2"}, "del": set()}
 
-    root = runTree(init_state, goal, action_database)
+    root, _ = runTree(init_state, goal, action_database)
 
 if __name__ == '__main__':
     main()

@@ -4,10 +4,16 @@ from basic_trees.Testing.setup_tests import generateLiterals, generateSolution
 from basic_trees.Goals.goal_tree import runTree
 from basic_trees.Testing.OR_Testing.histogram import getDisjunctSets
 from basic_trees.Goals.goal_types import OR, AND
+from basic_trees.Testing.test_tree import getNodeCount
 
+
+# This file checks to make sure subset pruning does not take away completeness
+# by removing necessary conditions / subtrees
 
 def pruningCheck(case, n_problems):
     counterexamples = []
+    sizes = []
+
     for _ in range(n_problems):
         all_literals = generateLiterals(case["literals"])
         states_db, action_db = generateSolution(all_literals, case["distance"], case["iterations"])
@@ -15,20 +21,23 @@ def pruningCheck(case, n_problems):
         sample = getDisjunctSets(states_db, action_db)
         if sample is None:
             continue
-        d1, d2 = sample   # the literal sets, not the distances
+        d1, d2, _, _ = sample   # Keep the literal sets, not the distances
 
         alg.SUBSET_PRUNE = False
-        alg.expansion_counter = 0
-        exact = runTree(states_db[0], OR(AND(*d1), AND(*d2)), action_db)
+        exact, _, _= runTree(states_db[0], OR(AND(*d1), AND(*d2)), action_db)
 
         alg.SUBSET_PRUNE = True
-        alg.expansion_counter = 0
-        subset = runTree(states_db[0], OR(AND(*d1), AND(*d2)), action_db)
+        subset, _, _ = runTree(states_db[0], OR(AND(*d1), AND(*d2)), action_db)
 
-        if exact is not False and subset is False:
-            counterexamples.append({"s0": states_db[0], "actions": action_db, "d1": d1, "d2": d2})
+        if exact is not False and subset is not False:
+            n_exact = getNodeCount(exact)
+            n_subset = getNodeCount(subset)
+            sizes.append((n_exact, n_subset))
 
-    return counterexamples
+            if len(sizes) % 500 == 0:
+                print(f"  Case {case['case']}: {len(sizes)}/{n_problems} successes ")
+
+    return counterexamples, sizes
 
 
 def main():
@@ -36,8 +45,21 @@ def main():
 
     print(f"literals = {test_case['literals']}, distance = {test_case['distance']}, iterations = {test_case['iterations']}")
 
-    counterexamples = pruningCheck(test_case, 2000)
+    counterexamples, sizes = pruningCheck(test_case, 2000)
     print(f"counterexamples: {len(counterexamples)}")
+
+    smaller = sum(1 for e, s in sizes if s < e)
+    equal   = sum(1 for e, s in sizes if s == e)
+    larger  = sum(1 for e, s in sizes if s > e)
+
+    print(f"compared: {len(sizes)}")
+    print(f"  subset smaller: {smaller}")
+    print(f"  identical:      {equal}")
+    print(f"  subset larger:  {larger}")
+
+    reductions = [(e - s) / e * 100 for e, s in sizes]
+    print(f"  mean reduction: {sum(reductions)/len(reductions):.1f}%")
+    print(f"  range: {min(reductions):.1f}% - {max(reductions):.1f}%")
 
 if __name__ == '__main__':
     main()

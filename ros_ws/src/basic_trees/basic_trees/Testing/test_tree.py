@@ -48,42 +48,19 @@ def runTree(init_state, goal_state, action_database, traverse=BFS(), scorer=None
     blackboard = py_trees.blackboard.Client(name="Init")
 
     setupWorld(blackboard, init_state) # Define world literals
-    init_state_snapshot = set(blackboard.world_state)   # copy, not alias
 
     # Set up the tree
     tree.setup()
 
-    traverse = DFS()            # EDIT traversal function here
+    # traverse = DFS()            # EDIT traversal function here
 
     
     expanded_literals = set()
-    total_prunes = 0
-    total_duplicates = 0
-    condition_size_trace = []  # len(c.preconditions) for each condition expanded, in order
-    branching_trace = []  # len(sorted_actions) for each corresponding expand() call
-    superset_trace = []
     expansion_count = 0
-    tick_count = 0
-    drift_first_expansion = None   # expansion index where state first differs from s0
-    drift_ticks = 0                # ticks after which state != s0
-    fired_before_final = 0         # ticks that mutated state but did not end the loop
-
+    
     while root.status != py_trees.common.Status.SUCCESS:
         # Handle tree returning RUNNING or FAILURE
         tree.tick()
-
-        tick_count += 1
-
-        drifted = (blackboard.world_state != init_state_snapshot)
-
-        if drifted:
-            drift_ticks += 1
-            if drift_first_expansion is None:
-                drift_first_expansion = expansion_count
-            if root.status == py_trees.common.Status.FAILURE:
-                # State changed but tree still failing -> next expand() runs
-                # against a mutated world, which Algorithm 2 never does.
-                fired_before_final += 1
 
 
         # print(f"--- tick ---")
@@ -97,40 +74,22 @@ def runTree(init_state, goal_state, action_database, traverse=BFS(), scorer=None
 
             if next_condition == None:
                 # print("No more conditions to expand - unsolvable")
-                return False
+                return False, expansion_count
             
             # print(f"next_condition: {next_condition.name}")
 
             # Add condition literals to expanded set
             expanded_literals.add(frozenset(next_condition.preconditions))  # Needs to be frozen to keep literals grouped as conditions
-            
-            condition_size_trace.append(len(next_condition.preconditions))
 
-            root, dup_count, branching_factor, superset_count = expand(root, next_condition, action_database, getAction, scorer)
+            root = expand(root, next_condition, action_database, getAction, scorer)
 
-            branching_trace.append(branching_factor)
-            superset_trace.append(superset_count)
-            total_duplicates += dup_count
-            total_prunes += prune(root, expanded_literals)
+            prune(root, expanded_literals)
             expansion_count += 1
 
-            # prune(root, expanded_literals)  # Remove sequence structures that have already been expanded elsewhere
             tree.root = root
 
     # py_trees.display.render_dot_tree(root, name=f"test_tree {counter}")
-    root.total_prunes = total_prunes
-    root.total_duplicates = total_duplicates
-    root.condition_size_trace = condition_size_trace
-    root.branching_trace = branching_trace
-    root.superset_trace = superset_trace
-    root.expansion_count = expansion_count
-    root.tick_count = tick_count
-    root.drift_first_expansion = (
-        drift_first_expansion if drift_first_expansion is not None else -1
-    )
-    root.drift_ticks = drift_ticks
-    root.fired_before_final = fired_before_final
-    return root
+    return root, expansion_count, set(blackboard.world_state)
 
 
 def getNodeCount(root):
@@ -159,7 +118,7 @@ def main():
     printTestSet(all_literals, states_database, action_database)
 
     # Run the Tree
-    root = runTree(states_database[0].copy(), states_database[-1], action_database)
+    root, _ = runTree(states_database[0].copy(), states_database[-1], action_database)
 
     # Gather Data
     getNodeCount(root)

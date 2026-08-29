@@ -21,16 +21,16 @@ def recordData(case):
         )
  
         # Record data
-        sample = getDisjunctDists(states_database, action_database)
+        sample = getDisjunctSets(states_database, action_database)
         if (sample == None):
             invalid += 1
             continue
 
-        d1, d2 = sample
-        if d1 == math.inf or d2 == math.inf:
+        _, _, dist1, dist2 = sample
+        if dist1 == math.inf or dist2 == math.inf:
             infs += 1
         else:
-            hi, lo = max(d1, d2), min(d1, d2)
+            hi, lo = max(dist1, dist2), min(dist1, dist2)
             runs.append({"min": lo, "max": hi, "spread": hi - lo, "ratio": (hi - lo) / hi})
 
         # if len(runs) % 50 == 0:
@@ -94,35 +94,11 @@ def getDisjunctSets(states_database, action_database):
                 or (d1.issubset(d2) or d2.issubset(d1))):
             continue
 
-        return (d1, d2)
-
-    return None
-
-
-def getDisjunctDists(states_database, action_database):
-    # Pick 2 random and distinct states
-    max_attempts = 50
-
-    for _ in range(max_attempts):
-        s1 = set(random.choice(states_database))
-        s2 = set(random.choice(states_database))
-
-        if (s2 == s1):
-            continue
-
-        # Get a random subset of both
-        d1 = getRandomSubset(s1)                        
-        d2 = getRandomSubset(s2)
-
-        if (d1.issubset(states_database[0]) or d2.issubset(states_database[0]) 
-                or (d1.issubset(d2) or d2.issubset(d1))):
-            continue
-
         # Caluclate distance from a state containing the disjuct set and the root
-        d1 = distToSubset(states_database, action_database, d1)
-        d2 = distToSubset(states_database, action_database, d2)
+        dist1 = distToSubset(states_database, action_database, d1)
+        dist2 = distToSubset(states_database, action_database, d2)
 
-        return (d1, d2)
+        return d1, d2, dist1, dist2
 
     return None
 
