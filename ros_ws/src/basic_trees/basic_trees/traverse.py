@@ -55,8 +55,12 @@ class CheapestFirst(Traversal):
         cheapest_child, cheapest_score = None, math.inf
         
         for child, score in children_scores:
-            if child is not None and score < cheapest_score:
+            if child is None:
+                continue
+            if score < cheapest_score:
                 cheapest_child, cheapest_score = child, score
+            if score == cheapest_score:
+                print("TIE HIT")
 
         return cheapest_child
 

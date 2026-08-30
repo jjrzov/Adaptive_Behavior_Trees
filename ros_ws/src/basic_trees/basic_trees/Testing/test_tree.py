@@ -74,7 +74,7 @@ def runTree(init_state, goal_state, action_database, traverse=BFS(), scorer=None
 
             if next_condition == None:
                 # print("No more conditions to expand - unsolvable")
-                return False, expansion_count
+                return False, expansion_count, set()
             
             # print(f"next_condition: {next_condition.name}")
 
@@ -90,7 +90,7 @@ def runTree(init_state, goal_state, action_database, traverse=BFS(), scorer=None
 
     # py_trees.display.render_dot_tree(root, name=f"test_tree {counter}")
     return root, expansion_count, set(blackboard.world_state)
-
+        
 
 def getNodeCount(root):
     # Traverse the entire tree and count the total amount of nodes

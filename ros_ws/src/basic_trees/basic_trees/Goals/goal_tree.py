@@ -50,8 +50,6 @@ def runTree(init_state, goal_term, action_database, traverse=BFS(), scorer=None)
     # Set up the tree
     tree.setup()
 
-    # traverse = CheapestFirst()           # EDIT traversal function here
-
     expanded_literals = set()
     expansion_count = 0
 
@@ -71,7 +69,7 @@ def runTree(init_state, goal_term, action_database, traverse=BFS(), scorer=None)
 
             if next_condition == None:
                 # print("No more conditions to expand - unsolvable")
-                return False, expansion_count
+                return False, expansion_count, set()
             
             # print(f"next_condition: {next_condition.name}")
 
@@ -87,6 +85,88 @@ def runTree(init_state, goal_term, action_database, traverse=BFS(), scorer=None)
 
     # py_trees.display.render_dot_tree(root, name=f"Paper_Test_w_DEAD_OR")
     return root, expansion_count, set(blackboard.world_state)
+
+
+def runSharedTree(init_state, disjunct, action_database, traverse=BFS(), scorer=None):
+    # Same as runTree but takes as input the set of expanded conditions so that
+    # they can be shared across all of the separate disjunct trees
+    
+    # Create the tree
+    root = createRoot(disjunct)
+    tree = py_trees.trees.BehaviourTree(
+        root=root,
+    )
+
+    # Initialise the blackboard BEFORE setting up the tree
+    blackboard = py_trees.blackboard.Client(name="Init")
+
+    setupWorld(blackboard, init_state) # Define world literals
+
+    # Set up the tree
+    tree.setup()
+
+    expansion_count = 0
+    expanded_literals = set()
+    
+    while root.status != py_trees.common.Status.SUCCESS:
+        # Handle tree returning RUNNING or FAILURE
+        tree.tick()
+
+
+        # print(f"--- tick ---")
+        # print(f"status: {root.status}")
+        # print(f"world_state: {blackboard.world_state}")
+
+
+        if root.status == py_trees.common.Status.FAILURE:
+            # Expand when tree returns failure
+            next_condition = traverse.getNextCondition(root, expanded_literals)
+
+            if next_condition == None:
+                # print("No more conditions to expand - unsolvable")
+                return False, expansion_count, set()
+            
+            # print(f"next_condition: {next_condition.name}")
+
+            # Add condition literals to expanded set
+            expanded_literals.add(frozenset(next_condition.preconditions))  # Needs to be frozen to keep literals grouped as conditions
+
+            root = expand(root, next_condition, action_database, getAction, scorer)
+
+            prune(root, expanded_literals)
+            expansion_count += 1
+
+            tree.root = root
+
+    # py_trees.display.render_dot_tree(root, name=f"test_tree {counter}")
+    return root, expansion_count, set(blackboard.world_state)
+
+
+def runDNF(init_state, disjuncts, action_db, traverse=BFS()):
+    # Create all the trees for each disjunct and connect them
+    subtrees = []
+    expansions = 0
+
+    for d in disjuncts:
+        # Create tree for each disjunct
+        root, exp, _ = runSharedTree(init_state.copy(), d, action_db, traverse) # Each tree needs the same init state
+
+        if root is False:
+            # Not solvable, try next disjunct
+            print(f"Not Solvable\tPer Disjunct Expansions: {exp}\n")
+            continue
+
+        subtrees.append(root)
+        expansions += exp
+
+    if not subtrees:
+        # None of the subtrees were solvable
+        return False, expansions, set()
+
+    selector_root = py_trees.composites.Selector(name="DNF JOIN", memory=False)
+    selector_root.add_children(subtrees)
+
+    return selector_root, expansions, set()
 
 
 def main():

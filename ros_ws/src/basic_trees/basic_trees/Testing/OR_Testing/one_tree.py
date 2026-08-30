@@ -2,7 +2,7 @@ import csv
 import basic_trees.algorithms as alg
 
 from basic_trees.Testing.setup_tests import generateLiterals, generateSolution
-from basic_trees.Goals.goal_tree import runTree
+from basic_trees.Goals.goal_tree import runTree, runDNF
 from basic_trees.Testing.OR_Testing.histogram import getDisjunctSets
 from basic_trees.Goals.goal_types import OR, AND
 from basic_trees.Testing.test_tree import getNodeCount
@@ -32,16 +32,24 @@ def runCase(case, traversals):
 
         for name, algo in traversals:
             goal = OR(AND(*d1), AND(*d2))
-            root, exp, last_state = runTree(states_db[0].copy(), goal, action_db, traverse=algo)
+
+            if name == "DNF":
+                root, exp, last_state = runDNF(states_db[0].copy(), [d1, d2], action_db, traverse=algo)
+            else:
+                root, exp, last_state = runTree(states_db[0].copy(), goal, action_db, traverse=algo)
+
 
             solved = root is not False  # Recored if solved problem
-
-            reached = whichDisjunct(last_state, d1, d2) if solved else ""
+            reached = whichDisjunct(last_state, d1, d2) if (solved and name != "DNF") else ""
             cheaper = "d1" if dist1 <= dist2 else "d2"
 
-            print(f"{name}")
-            print(f"Dist1: {dist1}\t Dist2: {dist2}\t Min: {min(dist1, dist2)}\t Max: {max(dist1, dist2)}")
-            print(f"Reached: {reached}\nCheaper: {cheaper}\nPicked Cheapest: {reached == cheaper}\n")
+            if name == "DNF":
+                print(f"{name}\nExpansions: {exp}\tNodes: {getNodeCount(root) if solved else '-'}\n")
+            else:
+                print(f"{name}")
+                print(f"Expansions: {exp}\tNodes: {getNodeCount(root) if solved else '-'}\n")
+                print(f"Dist1: {dist1}\t Dist2: {dist2}\t Min: {min(dist1, dist2)}\t Max: {max(dist1, dist2)}")
+                print(f"Reached: {reached}\nCheaper: {cheaper}\nPicked Cheapest: {reached == cheaper}\n")
 
 
 def main():
@@ -49,7 +57,7 @@ def main():
     print(f"literals = {test_case['literals']}, distance = {test_case['distance']}, iterations = {test_case['iterations']}")
 
     # All traversals for finding the next condition to expand
-    traversals = [("BFS", BFS()), ("DFS", DFS()), ("CheapestFirst", CheapestFirst())]
+    traversals = [("BFS", BFS()), ("DFS", DFS()), ("CheapestFirst", CheapestFirst()), ("DNF", BFS())]
 
     runCase(test_case, traversals)
 
