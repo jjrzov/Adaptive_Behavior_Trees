@@ -78,6 +78,7 @@ def expand(root, c, action_database, get_action_fn, scorer=None):
 
     # Check if condition was root
     if is_root:
+        # Only runs for paper's trees as trees that call buildBaseTree first already have a set root
         return subtree_tau
     else:
         c_old_parent.prepend_child(subtree_tau)

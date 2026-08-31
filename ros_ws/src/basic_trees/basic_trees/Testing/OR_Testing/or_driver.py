@@ -2,7 +2,7 @@ import csv
 import basic_trees.algorithms as alg
 
 from basic_trees.Testing.setup_tests import generateLiterals, generateSolution
-from basic_trees.Goals.goal_tree import runTree
+from basic_trees.Goals.goal_tree import runTree, runDNF
 from basic_trees.Testing.OR_Testing.histogram import getDisjunctSets
 from basic_trees.Goals.goal_types import OR, AND
 from basic_trees.Testing.test_tree import getNodeCount
@@ -53,27 +53,44 @@ def runCase(case, traversals, out_path):
 
             for name, algo in traversals:
                 goal = OR(AND(*d1), AND(*d2))
-                root, exp, last_state = runTree(states_db[0].copy(), goal, action_db, traverse=algo)
+
+                if name == "DNF":
+                    root, exp, last_state = runDNF(states_db[0].copy(), [d1, d2], action_db, traverse=algo)
+                else:
+                    root, exp, last_state = runTree(states_db[0].copy(), goal, action_db, traverse=algo)
 
                 solved = root is not False  # Recored if solved problem
-
-                reached = whichDisjunct(last_state, d1, d2) if solved else ""
+                reached = whichDisjunct(last_state, d1, d2) if (solved and name != "DNF") else ""
                 cheaper = "d1" if dist1 <= dist2 else "d2"
 
-                writer.writerow({
-                    "problem_id": p_index,
-                    "arm": name,
-                    "dist1": dist1,
-                    "dist2": dist2,
-                    "min": min(dist1, dist2),
-                    "max": max(dist1, dist2),
-                    "spread": abs(dist1 - dist2),
-                    "solved": solved,
-                    "node_count": getNodeCount(root) if solved else "",
-                    "expansions": exp,
-                    "disjunct_reached": reached,
-                    "picked_cheapest": reached == cheaper,
-                })
+                if name == "DNF":
+                    writer.writerow({
+                        "problem_id": p_index,
+                        "arm": name,
+                        "dist1": dist1,
+                        "dist2": dist2,
+                        "min": min(dist1, dist2),
+                        "max": max(dist1, dist2),
+                        "spread": abs(dist1 - dist2),
+                        "solved": solved,
+                        "node_count": getNodeCount(root) if solved else "",
+                        "expansions": exp,
+                    })
+                else:
+                    writer.writerow({
+                        "problem_id": p_index,
+                        "arm": name,
+                        "dist1": dist1,
+                        "dist2": dist2,
+                        "min": min(dist1, dist2),
+                        "max": max(dist1, dist2),
+                        "spread": abs(dist1 - dist2),
+                        "solved": solved,
+                        "node_count": getNodeCount(root) if solved else "",
+                        "expansions": exp,
+                        "disjunct_reached": reached,
+                        "picked_cheapest": reached == cheaper,
+                    })
 
             solved_count += 1
             if solved_count % 500 == 0:
@@ -85,7 +102,7 @@ def main():
     print(f"literals = {test_case['literals']}, distance = {test_case['distance']}, iterations = {test_case['iterations']}")
 
     # All traversals for finding the next condition to expand
-    traversals = [("BFS", BFS()), ("DFS", DFS()), ("CheapestFirst", CheapestFirst())]
+    traversals = [("BFS", BFS()), ("DFS", DFS()), ("CheapestFirst", CheapestFirst()), ("DNF", BFS())]
 
     runCase(test_case, traversals, "or_sweep.csv")
 

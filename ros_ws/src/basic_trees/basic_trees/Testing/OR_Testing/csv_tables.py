@@ -59,6 +59,13 @@ def paired(rows, baseline="BFS"):
                 else: ties += 1
         print(f"  {arm}: smaller {wins}, larger {losses}, tied {ties}")
 
+        ratios = [p[arm]["node_count"] / p[baseline]["node_count"]
+        for p in by_problem.values()
+        if arm in p and baseline in p and p[baseline]["node_count"]]
+        if ratios:
+            print(f"    node ratio: mean {sum(ratios)/len(ratios):.2f}, "
+                  f"range {min(ratios):.2f}-{max(ratios):.2f}")
+
 
 if __name__ == "__main__":
     rows = load("or_sweep.csv")

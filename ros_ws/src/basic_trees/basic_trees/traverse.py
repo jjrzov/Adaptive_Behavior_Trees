@@ -59,8 +59,9 @@ class CheapestFirst(Traversal):
                 continue
             if score < cheapest_score:
                 cheapest_child, cheapest_score = child, score
-            if score == cheapest_score:
-                print("TIE HIT")
+            # if score == cheapest_score:
+                # print("TIE HIT")
+
 
         return cheapest_child
 

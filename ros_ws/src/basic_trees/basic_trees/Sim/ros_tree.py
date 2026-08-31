@@ -6,7 +6,6 @@ from basic_trees.Conditions.condition import Condition
 from basic_trees.Actions import Load, Unload, MoveA, MoveB, MoveC
 from basic_trees.Actions import MockMoveA, MockMoveB, MockMoveC
 from basic_trees.traverse import BFS, DFS
-from basic_trees.action_scorer import ConditionCompletionScorer, TimeScorer
 from basic_trees.algorithms import prune, expand
 
 
@@ -21,18 +20,21 @@ Action_Database = {
         } 
 
 
-def createRoot():
+def createRoot(goal_state):
     # Create the root sequence
-    goal_condition = ["package_at_B"]
-    root = Condition(f"goal\n{sorted(goal_condition)}", goal_condition)
-
+    root = Condition(f"goal\n{sorted(goal_state)}", goal_state)
     return root
 
 
-def setupWorld(blackboard):
+def setupWorld(blackboard, init_state):
     # Dynamic world state
-    blackboard.register_key(key="world_state", access=py_trees.common.Access.WRITE)
-    blackboard.world_state = {"empty", "at_C", "package_at_A"}
+    if blackboard.is_registered(key="world_state", access=py_trees.common.Access.WRITE):
+        # Key already exists, need to reset it
+        blackboard.unset("world_state")
+    else:
+        blackboard.register_key(key="world_state", access=py_trees.common.Access.WRITE)
+    
+    blackboard.world_state = init_state # init_state should be a set
 
 
 def getAction(action_str, action_database, mock=MOCK):
@@ -57,11 +59,9 @@ def getAction(action_str, action_database, mock=MOCK):
     return action_map[action_str]()
 
 
-def main():
-    rclpy.init()
-
+def runTree(init_state, goal_state, action_database, traverse=BFS()):
     # Create the tree
-    root = createRoot()
+    root = createRoot(goal_state)
     tree = py_trees_ros.trees.BehaviourTree(
         root=root,
         unicode_tree_debug=True
@@ -70,21 +70,18 @@ def main():
     # Initialise the blackboard BEFORE setting up the tree
     blackboard = py_trees.blackboard.Client(name="Init")
 
-    setupWorld(blackboard) # Define world literals
+    setupWorld(blackboard, init_state) # Define world literals
 
     # Set up the tree
     try:
         tree.setup(node_name="my_tree", timeout=15.0)
     except py_trees_ros.exceptions.TimedOutError as e:
-        rclpy.shutdown()
+        print("ERROR: TREE SETUP TIMED OUT\n")
         return
     
     traverse = BFS()            # EDIT traversal function here
     scorer = None     # EDIT cost metric for adding actions in expand here
     
-    # traverse = DFS()            # EDIT traversal function here
-    # scorer = ConditionCompletionScorer(Action_Database)     # EDIT cost metric for adding actions in expand here
-
     expanded_literals = set()
 
     while root.status != py_trees.common.Status.SUCCESS:
@@ -117,13 +114,23 @@ def main():
 
     py_trees.display.render_dot_tree(root, name="tree")
 
+
+def main(args=None):
+    rclpy.init(args=args)
+
+
+    # Set enviroment
+    init_state = {"empty", "at_C", "package_at_A"}
+    goal_state = ["package_at_B"]
+
     try:
-        rclpy.spin(tree.node)
+        rclpy.spin(ros_tree.node)
     except KeyboardInterrupt:
         pass
     finally:
-        tree.shutdown()
+        ros_tree.shutdown()
         rclpy.shutdown()
+
 
 if __name__ == '__main__':
     main()
