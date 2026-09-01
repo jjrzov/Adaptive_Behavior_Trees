@@ -44,7 +44,6 @@ def runTree(init_state, goal_term, action_database, traverse=BFS(), scorer=None)
 
     # Initialise the blackboard BEFORE setting up the tree
     blackboard = py_trees.blackboard.Client(name="Init")
-
     setupWorld(blackboard, init_state) # Define world literals
 
     # Set up the tree

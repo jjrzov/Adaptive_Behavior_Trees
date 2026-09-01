@@ -275,7 +275,7 @@
     <!-- ====================================================== -->
     <model name="diff_drive">
       <self_collide>true</self_collide>
-      <pose>10 0 0.35 0 0 0</pose>
+      <pose>10 0 0.1 0 0 0</pose>
       <include merge="true">
         <uri>/Adaptive_Behavior_Trees/ros_ws/src/gazebo_sim/gazebo_sim/models/diff_drive</uri>
       </include>
@@ -296,8 +296,13 @@
       <plugin
         filename="ignition-gazebo-odometry-publisher-system"
         name="ignition::gazebo::systems::OdometryPublisher">
-        <odom_frame>diff_drive/odom</odom_frame>
+        <odom_frame>odom</odom_frame>
         <robot_base_frame>diff_drive</robot_base_frame>
+      </plugin>
+
+      <plugin filename="ignition-gazebo-sensors-system"
+        name="ignition::gazebo::systems::Sensors">
+        <render_engine>ogre2</render_engine>
       </plugin>
     </model>
 
