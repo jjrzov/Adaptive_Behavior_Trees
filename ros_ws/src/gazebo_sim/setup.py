@@ -15,6 +15,7 @@ setup(
         (os.path.join('share', package_name, 'launch'), glob('gazebo_sim/launch/*.launch.py')),
         (os.path.join('share', package_name, 'worlds'), glob('gazebo_sim/worlds/*.sdf')),
         (os.path.join('share', package_name, 'configs'), glob('gazebo_sim/configs/*')),
+        (os.path.join('share', package_name, 'maps'), glob('gazebo_sim/maps/*')),
         (os.path.join('share', package_name, 'models', 'diff_drive'), glob('gazebo_sim/models/diff_drive/*')),
     ],
     install_requires=['setuptools'],

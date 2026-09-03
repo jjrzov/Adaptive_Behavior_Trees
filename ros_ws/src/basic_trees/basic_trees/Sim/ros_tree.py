@@ -9,11 +9,10 @@ from basic_trees.traverse import BFS, DFS
 from basic_trees.algorithms import prune, expand
 from basic_trees.Goals.goal_tree import buildBaseTree
 from basic_trees.Goals.goal_types import AND, OR
-
+from basic_trees.Sim.observer import PoseObserver
 
 
 MOCK = True    # Use mock actions or real actions
-
 
 
 def setupWorld(blackboard, init_state):
@@ -27,16 +26,9 @@ def setupWorld(blackboard, init_state):
     blackboard.world_state = init_state # init_state should be a set
 
 
-def getAction(action_str, action_database, mock=MOCK):
-    # # Converts action name as a string to action object
-    # action_map_real = {
-    #     "load"   : lambda: Load(action_database=action_database),
-    #     "unload" : lambda: Unload(action_database=action_database),
-    #     "move_A" : lambda: MoveA(),
-    #     "move_B" : lambda: MoveB(),
-    #     "move_C" : lambda: MoveC(),
-    # }
-    
+def getAction(action_str, action_database):
+    # Converts action name as a string to action object
+    # Now only used for MOCK trials, SimFactory handles real actions    
     action_map_mock = {
         "load"   : lambda: Load(action_database=action_database),
         "unload" : lambda: Unload(action_database=action_database),
@@ -45,8 +37,7 @@ def getAction(action_str, action_database, mock=MOCK):
         "move_C" : lambda: MockMoveC(),
     }
     
-    action_map = action_map_mock if mock else action_map_real
-    return action_map[action_str]()
+    return action_map_mock[action_str]()
 
 
 def runTree(init_state, goal_state, action_database, pose_map, traverse=BFS()):
@@ -69,6 +60,10 @@ def runTree(init_state, goal_state, action_database, pose_map, traverse=BFS()):
         return False
     
     expanded_literals = set()
+
+    if not MOCK:
+        PoseObserver(tree.node, blackboard, pose_map)   # Start pose observer
+        action_factory = SimActionFactory(tree.node, action_database, pose_map)
 
     while root.status != py_trees.common.Status.SUCCESS:    # TODO: Eventually should tick forever in case of disturbances
         # Handle tree returning RUNNING or FAILURE
@@ -94,8 +89,11 @@ def runTree(init_state, goal_state, action_database, pose_map, traverse=BFS()):
 
             # Add condition literals to expanded set
             expanded_literals.add(frozenset(next_condition.preconditions))  # Needs to be frozen to keep literals grouped as conditions
-            
-            root = expand(root, next_condition, action_database, SimActionFactory)
+
+            if MOCK:
+                root = expand(root, next_condition, action_database, getAction)
+            else:
+                root = expand(root, next_condition, action_database, action_factory)
 
             prune(root, expanded_literals)  # Remove sequence structures that have already been expanded elsewhere
 
@@ -123,9 +121,9 @@ def main(args=None):
             } 
 
     pose_map = {
-        "A": {"goal": (0.0, 4.5, 1.0),  "bounds": ((-3.25, 3.25), (0.75, 8.25)),  "literal": "at_A"},
-        "B": {"goal": (0.0, -4.5, 1.0), "bounds": ((-3.25, 3.25), (0.75, 8.25)),  "literal": "at_B"},
-        "C": {"goal": (9.0, 0.0, 1.0),  "bounds": ((4.75, 13.25), (-8.25, 8.25)), "literal": "at_C"},
+        "A": {"goal": (0.0, 4.5, 1.0),  "bounds": ((-3.25, 3.25), (0.75, 8.25)),    "literal": "at_A"},
+        "B": {"goal": (0.0, -4.5, 1.0), "bounds": ((-3.25, 3.25), (-8.25, -0.75)),  "literal": "at_B"},
+        "C": {"goal": (9.0, 0.0, 1.0),  "bounds": ((4.75, 13.25), (-8.25, 8.25)),   "literal": "at_C"},
     }
 
     try:

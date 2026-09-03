@@ -66,7 +66,10 @@ def generate_launch_description():
        package='rviz2',
        executable='rviz2',
        arguments=['-d', os.path.join(pkg_gazebo_sim, 'configs', 'diff_drive.rviz')],
-       condition=IfCondition(LaunchConfiguration('rviz'))
+       condition=IfCondition(LaunchConfiguration('rviz')),
+       parameters=[
+            {'use_sim_time': True},
+       ]
     )
 
     # Bridge ROS topics and Gazebo messages for establishing communication
