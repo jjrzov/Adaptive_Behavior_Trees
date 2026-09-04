@@ -12,7 +12,7 @@ from basic_trees.Goals.goal_types import AND, OR
 from basic_trees.Sim.observer import PoseObserver
 
 
-MOCK = True    # Use mock actions or real actions
+MOCK = False    # Use mock actions or real actions
 
 
 def setupWorld(blackboard, init_state):
@@ -60,6 +60,7 @@ def runTree(init_state, goal_state, action_database, pose_map, traverse=BFS()):
         return False
     
     expanded_literals = set()
+    curr_world_state = blackboard.world_state   # For printing world state as tree running
 
     if not MOCK:
         PoseObserver(tree.node, blackboard, pose_map)   # Start pose observer
@@ -70,10 +71,11 @@ def runTree(init_state, goal_state, action_database, pose_map, traverse=BFS()):
         rclpy.spin_once(tree.node, timeout_sec=0)   # Need to spin for updates
         tree.tick()
 
-
-        print(f"--- tick ---")
-        print(f"status: {root.status}")
-        print(f"world_state: {blackboard.world_state}")
+        if blackboard.world_state != curr_world_state:
+            print(f"--- tick ---")
+            print(f"status: {root.status}")
+            print(f"world_state: {blackboard.world_state}")
+            curr_world_state = blackboard.world_state
 
 
         if root.status == py_trees.common.Status.FAILURE:
@@ -108,8 +110,8 @@ def main(args=None):
     rclpy.init(args=args)
 
     # Set enviroment
-    init_state = {"empty", "at_C"}
-    goal_state = AND("at_B", "package_delivered")
+    init_state = {"empty", "at_B"}
+    goal_state = AND("at_A")
 
     
     action_database = {
@@ -121,8 +123,8 @@ def main(args=None):
             } 
 
     pose_map = {
-        "A": {"goal": (0.0, 4.5, 1.0),  "bounds": ((-3.25, 3.25), (0.75, 8.25)),    "literal": "at_A"},
-        "B": {"goal": (0.0, -4.5, 1.0), "bounds": ((-3.25, 3.25), (-8.25, -0.75)),  "literal": "at_B"},
+        "A": {"goal": (0.0, 4.5, 1.0),  "bounds": ((-3.25, 3.25), (0.75, 8.25)),    "literal": "at_A"}, # Red object
+        "B": {"goal": (0.0, -4.5, 1.0), "bounds": ((-3.25, 3.25), (-8.25, -0.75)),  "literal": "at_B"}, # Big Room
         "C": {"goal": (9.0, 0.0, 1.0),  "bounds": ((4.75, 13.25), (-8.25, 8.25)),   "literal": "at_C"},
     }
 

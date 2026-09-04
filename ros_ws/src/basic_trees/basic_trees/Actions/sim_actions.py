@@ -34,13 +34,13 @@ class SimActionFactory:
 
             action.setup(node=self.node)
             return action
-        return build()
+        return build
 
 
     def _make_blackboard_action(self, action_class):
         def build():
             return action_class(action_database=self.action_database)
-        return build()
+        return build
 
 
     def __call__(self, action_str, action_database):

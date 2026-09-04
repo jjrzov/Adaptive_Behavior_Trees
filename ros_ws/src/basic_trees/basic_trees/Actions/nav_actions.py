@@ -32,7 +32,6 @@ class NavAction(py_trees.behaviour.Behaviour):
             # Room Locations
             self.goal_msg = NavigateToPose.Goal()
             self.goal_msg.pose.header.frame_id = 'map'
-            self.goal_msg.pose.header.stamp = None
             self.goal_msg.pose.pose.position.x = self.room_info['goal'][0]
             self.goal_msg.pose.pose.position.y = self.room_info['goal'][1]
             self.goal_msg.pose.pose.orientation.w = self.room_info['goal'][2]
@@ -69,7 +68,7 @@ class NavAction(py_trees.behaviour.Behaviour):
             if (self.future.done()):
                 self.goal_handle = self.future.result()
                 if self.goal_handle.accepted:
-                    if (self.result == None):
+                    if (self.result is None):
                         self.result = self.goal_handle.get_result_async()
 
                     if (self.result.done()):
@@ -90,6 +89,6 @@ class NavAction(py_trees.behaviour.Behaviour):
     def terminate(self, new_status: py_trees.common.Status):
         # Called when leaving this behaviour for ANY reason
         # Use this for cleanup
-        if self.goal_handle != None:
+        if self.goal_handle is not None:    # Has to be is not instead of != to bypass None blow up
             if self.goal_handle.accepted and new_status == py_trees.common.Status.INVALID:
                 self.goal_handle.cancel_goal_async()

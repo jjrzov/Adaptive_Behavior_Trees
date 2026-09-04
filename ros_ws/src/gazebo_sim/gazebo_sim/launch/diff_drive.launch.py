@@ -42,11 +42,10 @@ def generate_launch_description():
     gz_sim = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             os.path.join(pkg_ros_gz_sim, 'launch', 'gz_sim.launch.py')),
-        launch_arguments={'gz_args': PathJoinSubstitution([
-            pkg_gazebo_sim,
-            'worlds',
-            'triple_room.sdf'
-        ])}.items(),
+        launch_arguments={'gz_args': [PathJoinSubstitution([
+            pkg_gazebo_sim, 
+            'worlds', 
+            'triple_room.sdf']), ' -r']}.items(),
     )
 
     # Takes the description and joint angles as inputs and publishes the 3D poses of the robot links
@@ -83,11 +82,32 @@ def generate_launch_description():
         output='screen'
     )
 
+    # Spawn the robot model
+    spawn = Node(
+        package='ros_gz_sim',
+        executable='create',
+        arguments=[
+            '-file', os.path.join(pkg_gazebo_sim, 'models', 'diff_drive', 'model.sdf'),
+            '-name', 'diff_drive',
+            '-x', LaunchConfiguration('x_pose'),
+            '-y', LaunchConfiguration('y_pose'),
+            '-z', '0.0',
+            '-Y', LaunchConfiguration('yaw'),
+        ],
+        output='screen',
+    )
+
     return LaunchDescription([
         gz_sim,
+        
         DeclareLaunchArgument('rviz', default_value='true',
                               description='Open RViz.'),
         bridge,
         robot_state_publisher,
-        rviz
+        rviz,
+
+        DeclareLaunchArgument('x_pose', default_value='10.0'),
+        DeclareLaunchArgument('y_pose', default_value='0.0'),
+        DeclareLaunchArgument('yaw', default_value='0.0'),
+        spawn,
     ])
