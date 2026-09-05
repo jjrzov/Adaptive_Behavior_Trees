@@ -6,7 +6,8 @@ import random
 NUM_OF_LITERALS = 10   # Amount of literals 2^N possible states
 DISTANCE = 10    # Amount of states from start to goal
 ITERATIONS = 10  # Amount of times to branch from generated path
-
+COST_MIN = 1.0  # Min bound for cost of an action
+COST_MAX = 10.0 # Max bound for cost of an action
 
 def generateAction(literals, state):
     # Generate a random action using the world state and all literals
@@ -26,7 +27,9 @@ def generateAction(literals, state):
                 if random.random() > 0.5:
                     dels.add(literal)
 
-    return {"pre": pre, "add": add, "del": dels}
+    cost = random.uniform(COST_MIN, COST_MAX)   # Randomly sample the cost with a UNIFORM distribution
+
+    return {"pre": pre, "add": add, "del": dels, "cost": cost}
 
 def generateLiterals(num_literals=NUM_OF_LITERALS):
     # Create list of all possible literals

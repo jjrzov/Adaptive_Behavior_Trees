@@ -111,15 +111,15 @@ def main(args=None):
 
     # Set enviroment
     init_state = {"empty", "at_B"}
-    goal_state = AND("at_A")
+    goal_state = OR("at_A", "at_C")
 
     
     action_database = {
-            "load"     : {"pre" : ["empty", "at_A"],            "add" : ["full"],                           "del" : ["empty"]},
-            "unload"   : {"pre" : ["full", "at_B"],             "add" : ["empty", "package_delivered"],     "del" : ["full"]},
-            "move_A"   : {"pre" : [],                           "add" : ["at_A"],                           "del" : ["at_B", "at_C"]},
-            "move_B"   : {"pre" : [],                           "add" : ["at_B"],                           "del" : ["at_A", "at_C"]},
-            "move_C"   : {"pre" : [],                           "add" : ["at_C"],                           "del" : ["at_A", "at_B"]},
+            "load"     : {"pre" : ["empty", "at_A"],    "add" : ["full"],                           "del" : ["empty"],          "cost" : 2.0},
+            "unload"   : {"pre" : ["full", "at_B"],     "add" : ["empty", "package_delivered"],     "del" : ["full"],           "cost" : 1.0},
+            "move_A"   : {"pre" : [],                   "add" : ["at_A"],                           "del" : ["at_B", "at_C"],   "cost" : 1.0},
+            "move_B"   : {"pre" : [],                   "add" : ["at_B"],                           "del" : ["at_A", "at_C"],   "cost" : 2.0},
+            "move_C"   : {"pre" : [],                   "add" : ["at_C"],                           "del" : ["at_A", "at_B"],   "cost" : 3.0},
             } 
 
     pose_map = {
