@@ -6,10 +6,11 @@ from basic_trees.Actions import Load, Unload, NavAction
 
 
 class SimActionFactory:
-    def __init__(self, node, action_database, pose_map):
+    def __init__(self, node, action_database, pose_map, room_costs):
         self.node = node
         self.action_database = action_database
         self.pose_map = pose_map
+        self.room_costs = room_costs
 
         self.nav_client = ActionClient(self.node, NavigateToPose, 'navigate_to_pose')
         if not self.nav_client.wait_for_server(timeout_sec=15.0):
@@ -29,7 +30,9 @@ class SimActionFactory:
             action = NavAction(
                         name=action_str,
                         nav_client=self.nav_client,
-                        room_info=self.pose_map[map_key]
+                        cost_map=self.room_costs,
+                        room_info=self.pose_map[map_key],
+                        room_key=map_key,
             )
 
             action.setup(node=self.node)

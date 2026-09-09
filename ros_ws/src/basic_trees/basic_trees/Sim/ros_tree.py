@@ -9,13 +9,15 @@ from basic_trees.traverse import BFS, DFS
 from basic_trees.algorithms import prune, expand
 from basic_trees.Goals.goal_tree import buildBaseTree
 from basic_trees.Goals.goal_types import AND, OR
-from basic_trees.Sim.observer import PoseObserver
+from basic_trees.Sim import PoseObserver, CostMapping
+from basic_trees.Sim.room_mapping import findStartRoom
+
 
 
 MOCK = False    # Use mock actions or real actions
 
 
-def setupWorld(blackboard, init_state):
+def setupWorld(blackboard, init_state, pose_map):
     # Dynamic world state
     if blackboard.is_registered(key="world_state", access=py_trees.common.Access.WRITE):
         # Key already exists, need to reset it
@@ -24,6 +26,15 @@ def setupWorld(blackboard, init_state):
         blackboard.register_key(key="world_state", access=py_trees.common.Access.WRITE)
     
     blackboard.world_state = init_state # init_state should be a set
+
+
+    if blackboard.is_registered(key="latest_room_reading", access=py_trees.common.Access.WRITE):
+        # Key already exists, need to reset it
+        blackboard.unset("latest_room_reading")
+    else:
+        blackboard.register_key(key="latest_room_reading", access=py_trees.common.Access.WRITE)
+    
+    blackboard.latest_room_reading = findStartRoom(init_state, pose_map) # initial room should be the room literal in init_state
 
 
 def getAction(action_str, action_database):
@@ -50,7 +61,7 @@ def runTree(init_state, goal_state, action_database, pose_map, traverse=BFS()):
 
     # Initialise the blackboard BEFORE setting up the tree
     blackboard = py_trees.blackboard.Client(name="Init")
-    setupWorld(blackboard, init_state) # Define world literals
+    setupWorld(blackboard, init_state, pose_map) # Define world literals
 
     # Set up the tree
     try:
@@ -60,11 +71,17 @@ def runTree(init_state, goal_state, action_database, pose_map, traverse=BFS()):
         return False
     
     expanded_literals = set()
-    curr_world_state = blackboard.world_state   # For printing world state as tree running
+    curr_world_state = set(blackboard.world_state)   # For printing world state as tree running
 
     if not MOCK:
         PoseObserver(tree.node, blackboard, pose_map)   # Start pose observer
-        action_factory = SimActionFactory(tree.node, action_database, pose_map)
+
+        room_costs = CostMapping(tree.node, pose_map)
+        room_costs.measureCosts()   # Set the intital costs
+
+        action_factory = SimActionFactory(tree.node, action_database, pose_map, room_costs)
+
+
 
     while root.status != py_trees.common.Status.SUCCESS:    # TODO: Eventually should tick forever in case of disturbances
         # Handle tree returning RUNNING or FAILURE
@@ -75,14 +92,14 @@ def runTree(init_state, goal_state, action_database, pose_map, traverse=BFS()):
             print(f"--- tick ---")
             print(f"status: {root.status}")
             print(f"world_state: {blackboard.world_state}")
-            curr_world_state = blackboard.world_state
+            curr_world_state = set(blackboard.world_state)
 
 
         if root.status == py_trees.common.Status.FAILURE:
             # Expand when tree returns failure
             next_condition = traverse.getNextCondition(root, expanded_literals)
 
-            if next_condition == None:
+            if next_condition is None:
                 print("No more conditions to expand - unsolvable")
                 tree.shutdown() # Delete tree
                 return False
@@ -113,7 +130,7 @@ def main(args=None):
     init_state = {"empty", "at_B"}
     goal_state = OR("at_A", "at_C")
 
-    
+    # Cost in action_database is only for MOCK but not implemented for MOCK yet
     action_database = {
             "load"     : {"pre" : ["empty", "at_A"],    "add" : ["full"],                           "del" : ["empty"],          "cost" : 2.0},
             "unload"   : {"pre" : ["full", "at_B"],     "add" : ["empty", "package_delivered"],     "del" : ["full"],           "cost" : 1.0},

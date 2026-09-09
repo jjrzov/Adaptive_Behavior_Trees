@@ -1,15 +1,16 @@
 import py_trees
 
-from rclpy.action import ActionClient
 from nav2_msgs.action import NavigateToPose
 from action_msgs.msg import GoalStatus
 
 
 class NavAction(py_trees.behaviour.Behaviour):
-    def __init__(self, name, nav_client, room_info):
+    def __init__(self, name, nav_client, room_costs, room_info, room_key):
         super().__init__(name=name)
         self.nav_client = nav_client
         self.room_info = room_info
+        self.room_costs = room_costs
+        self.room_key = room_key
 
         # Set up blackboard client
         self.blackboard = self.attach_blackboard_client(name=name)
@@ -18,6 +19,12 @@ class NavAction(py_trees.behaviour.Behaviour):
         self.blackboard.register_key(
             key="world_state",
             access=py_trees.common.Access.WRITE
+        )
+
+        # Read current room
+        self.blackboard.register_key(
+            key="latest_room_reading",
+            access=py_trees.common.Access.READ
         )
 
         self.goal_handle = None
@@ -30,13 +37,12 @@ class NavAction(py_trees.behaviour.Behaviour):
             self.node = kwargs['node']
 
             # Room Locations
-            self.goal_msg = NavigateToPose.Goal()
-            self.goal_msg.pose.header.frame_id = 'map'
-            self.goal_msg.pose.pose.position.x = self.room_info['goal'][0]
-            self.goal_msg.pose.pose.position.y = self.room_info['goal'][1]
-            self.goal_msg.pose.pose.orientation.w = self.room_info['goal'][2]
+            self.msg = NavigateToPose.Goal()
+            self.msg.pose.header.frame_id = 'map'
+            self.msg.pose.pose.position.x = self.room_info['goal'][0]
+            self.msg.pose.pose.position.y = self.room_info['goal'][1]
+            self.msg.pose.pose.orientation.w = self.room_info['goal'][2]
 
-            self.room_literal = self.room_info['literal']
             self.nav_state = False
             self.future = None
 
@@ -44,6 +50,13 @@ class NavAction(py_trees.behaviour.Behaviour):
             raise KeyError("Missing ROS node") from e
 
 
+    def getCost(self):
+        # Return the cost of the action which changes depending on current room
+        return self.room_costs.getRoomCost(
+            self.blackboard.latest_room_reading, 
+            self.room_key
+        )
+        
     def initialise(self):
         # Called EACH TIME this action becomes active
    
@@ -51,8 +64,8 @@ class NavAction(py_trees.behaviour.Behaviour):
         self.goal_handle = None
         self.result = None
 
-        self.goal_msg.pose.header.stamp = self.node.get_clock().now().to_msg()
-        self.future = self.nav_client.send_goal_async(self.goal_msg)
+        self.msg.pose.header.stamp = self.node.get_clock().now().to_msg()
+        self.future = self.nav_client.send_goal_async(self.msg)
 
         self.nav_state = 'RUNNING'
         return
