@@ -16,6 +16,12 @@ class TestAction(py_trees.behaviour.Behaviour):
             access=py_trees.common.Access.WRITE
         )
 
+
+    def getCost(self):
+        # Return cost of the action
+        return self.action_database[self.name]['cost']
+
+
     def update(self) -> py_trees.common.Status:
         # Called EVERY TICK while this behaviour is active  
         adding = self.action_database[self.name]['add']

@@ -27,6 +27,12 @@ class MockMove(py_trees.behaviour.Behaviour):
         except KeyError as e:
             raise KeyError("Missing ROS node") from e
 
+
+    def getCost(self):
+        # Return cost of the action
+        return self.action_database[self.name]['cost']
+    
+
     def initialise(self):
         # Called EACH TIME this behaviour becomes active
 

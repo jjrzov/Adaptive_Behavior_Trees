@@ -5,6 +5,7 @@ from nav2_msgs.action import NavigateToPose
 from basic_trees.Actions import Load, Unload, NavAction
 
 
+
 class SimActionFactory:
     def __init__(self, node, action_database, pose_map, room_costs):
         self.node = node
@@ -30,7 +31,7 @@ class SimActionFactory:
             action = NavAction(
                         name=action_str,
                         nav_client=self.nav_client,
-                        cost_map=self.room_costs,
+                        room_costs=self.room_costs,
                         room_info=self.pose_map[map_key],
                         room_key=map_key,
             )

@@ -5,7 +5,7 @@ import rclpy
 from basic_trees.Conditions.condition import Condition
 from basic_trees.Actions import Load, Unload, SimActionFactory
 from basic_trees.Actions import MockMoveA, MockMoveB, MockMoveC
-from basic_trees.traverse import BFS, DFS
+from basic_trees.traverse import BFS, DFS, CheapestFirst
 from basic_trees.algorithms import prune, expand
 from basic_trees.Goals.goal_tree import buildBaseTree
 from basic_trees.Goals.goal_types import AND, OR
@@ -56,7 +56,7 @@ def runTree(init_state, goal_state, action_database, pose_map, traverse=BFS()):
     root = buildBaseTree(goal_state)
     tree = py_trees_ros.trees.BehaviourTree(
         root=root,
-        unicode_tree_debug=True
+        unicode_tree_debug=False        # Set to True if you want to see print out of tree node statusesss
     )
 
     # Initialise the blackboard BEFORE setting up the tree
@@ -118,7 +118,7 @@ def runTree(init_state, goal_state, action_database, pose_map, traverse=BFS()):
 
             tree.root = root
 
-    py_trees.display.render_dot_tree(root, name="ROS_TREEs")
+    py_trees.display.render_dot_tree(root, name="ROS_TREEs12")
     tree.shutdown() # Delete tree
     return True
 
@@ -128,11 +128,11 @@ def main(args=None):
 
     # Set enviroment
     init_state = {"empty", "at_B"}
-    goal_state = OR("at_A", "at_C")
+    goal_state = OR(AND("at_A", "full"), AND("at_C", "full"))
 
     # Cost in action_database is only for MOCK but not implemented for MOCK yet
     action_database = {
-            "load"     : {"pre" : ["empty", "at_A"],    "add" : ["full"],                           "del" : ["empty"],          "cost" : 2.0},
+            "load"     : {"pre" : ["empty"],            "add" : ["full"],                           "del" : ["empty"],          "cost" : 2.0},
             "unload"   : {"pre" : ["full", "at_B"],     "add" : ["empty", "package_delivered"],     "del" : ["full"],           "cost" : 1.0},
             "move_A"   : {"pre" : [],                   "add" : ["at_A"],                           "del" : ["at_B", "at_C"],   "cost" : 1.0},
             "move_B"   : {"pre" : [],                   "add" : ["at_B"],                           "del" : ["at_A", "at_C"],   "cost" : 2.0},
@@ -146,7 +146,7 @@ def main(args=None):
     }
 
     try:
-        runTree(init_state, goal_state, action_database, pose_map)
+        runTree(init_state, goal_state, action_database, pose_map, CheapestFirst())
     finally:
         rclpy.shutdown()
 
