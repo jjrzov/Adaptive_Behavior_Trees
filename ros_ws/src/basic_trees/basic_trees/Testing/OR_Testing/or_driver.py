@@ -1,17 +1,17 @@
 import csv
 import basic_trees.algorithms as alg
 
-from basic_trees.Testing.setup_tests import generateLiterals, generateSolution
+from basic_trees.Testing.setup_tests import generateLiterals, generateSolution, getDisjunctSetsWithCosts, unweightedDistToSubset
 from basic_trees.Goals.goal_tree import runTree, runDNF
-from basic_trees.Testing.OR_Testing.histogram import getDisjunctSets
 from basic_trees.Goals.goal_types import OR, AND
 from basic_trees.Testing.test_tree import getNodeCount
 from basic_trees.traverse import *
 
-TARGET_RUNS = 2000
+TARGET_RUNS = 500
 
 FIELDS = ["problem_id", "arm", "dist1", "dist2", "min", "max", "spread",
-          "solved", "node_count", "expansions", "disjunct_reached", "picked_cheapest"]
+          "solved", "node_count", "expansions", "disjunct_reached", "picked_cheapest",
+          "hops1", "hops2", "cheaper_by_cost", "cheaper_by_hops", "agree"]
 
 
 def whichDisjunct(final_state, d1, d2):
@@ -46,10 +46,15 @@ def runCase(case, traversals, out_path):
             states_db, action_db = generateSolution(all_literals, case["distance"], case["iterations"])
 
             # Generate the disjuncts
-            sample = getDisjunctSets(states_db, action_db)
+            sample = getDisjunctSetsWithCosts(states_db, action_db)
             if sample is None:
                 continue
             d1, d2, dist1, dist2 = sample   # the literal sets, not the distances
+
+            hops1 = unweightedDistToSubset(states_db, action_db, set(d1))
+            hops2 = unweightedDistToSubset(states_db, action_db, set(d2))
+            cheaper_by_hops = "d1" if hops1 < hops2 else ("d2" if hops2 < hops1 else "tie")
+
 
             for name, algo in traversals:
                 goal = OR(AND(*d1), AND(*d2))
@@ -75,6 +80,11 @@ def runCase(case, traversals, out_path):
                         "solved": solved,
                         "node_count": getNodeCount(root) if solved else "",
                         "expansions": exp,
+                        "hops1": hops1,
+                        "hops2": hops2,
+                        "cheaper_by_cost": cheaper,
+                        "cheaper_by_hops": cheaper_by_hops,
+                        "agree": cheaper == cheaper_by_hops,
                     })
                 else:
                     writer.writerow({
@@ -90,6 +100,11 @@ def runCase(case, traversals, out_path):
                         "expansions": exp,
                         "disjunct_reached": reached,
                         "picked_cheapest": reached == cheaper,
+                        "hops1": hops1,
+                        "hops2": hops2,
+                        "cheaper_by_cost": cheaper,
+                        "cheaper_by_hops": cheaper_by_hops,
+                        "agree": cheaper == cheaper_by_hops,
                     })
 
             solved_count += 1
@@ -98,11 +113,11 @@ def runCase(case, traversals, out_path):
 
 
 def main():
-    test_case = {"case": 1, "literals": 100, "distance": 100, "iterations": 10}
+    test_case = {"case": 1, "literals": 100, "distance": 10, "iterations": 100}
     print(f"literals = {test_case['literals']}, distance = {test_case['distance']}, iterations = {test_case['iterations']}")
 
     # All traversals for finding the next condition to expand
-    traversals = [("BFS", BFS()), ("DFS", DFS()), ("CheapestFirst", CheapestFirst()), ("DNF", BFS())]
+    traversals = [("BFS", BFS()), ("DFS", DFS()), ("CheapestFirst", CheapestFirst())]
 
     runCase(test_case, traversals, "or_sweep.csv")
 

@@ -3,7 +3,7 @@ import math
 import matplotlib.pyplot as plt
 from collections import Counter
 
-from basic_trees.Testing.setup_tests import generateLiterals, generateSolution
+from basic_trees.Testing.setup_tests import generateLiterals, generateSolution, getDisjunctSets
 
 TARGET_SUCCESSES = 500
 
@@ -37,70 +37,6 @@ def recordData(case):
         #     print(f"   Case {case['case']}: {len(runs)}/{TARGET_SUCCESSES} successes")
 
     return runs, invalid, infs
-
-
-def getRandomSubset(state):
-    subset = set()
-
-    for literal in state:
-        if random.random() > 0.25:
-            subset.add(literal)
-
-    return subset
-
-
-def distToSubset(states_database, action_database, disjunct):
-    depth = 0
-
-    q = [(states_database[0], depth)]  # Initialize queue
-    visited = {frozenset(states_database[0])}
-    states_pool = {frozenset(s) for s in states_database}
-
-    while (len(q) != 0):
-        # Keep searching until empty
-        state, depth = q.pop(0)
-        if disjunct.issubset(state):
-            return depth
-
-        for _, ops in action_database.items():
-            if ops["pre"].issubset(state):
-                # action is possible because the state has its preconditions
-                next_state = frozenset(state.union(ops["add"]) - ops["del"])   # Calulate possible next state
-
-                if (next_state not in visited) and (next_state in states_pool):
-                    # Possible next state hasn't been explored and is in the state pool
-                    visited.add(next_state)
-                    q.append((next_state, depth + 1))
-
-    return math.inf # No valid state found
-
-
-def getDisjunctSets(states_database, action_database):
-    # Pick 2 random and distinct states
-    max_attempts = 50
-
-    for _ in range(max_attempts):
-        s1 = set(random.choice(states_database))
-        s2 = set(random.choice(states_database))
-
-        if (s2 == s1):
-            continue
-
-        # Get a random subset of both
-        d1 = getRandomSubset(s1)                        
-        d2 = getRandomSubset(s2)
-
-        if (d1.issubset(states_database[0]) or d2.issubset(states_database[0]) 
-                or (d1.issubset(d2) or d2.issubset(d1))):
-            continue
-
-        # Caluclate distance from a state containing the disjuct set and the root
-        dist1 = distToSubset(states_database, action_database, d1)
-        dist2 = distToSubset(states_database, action_database, d2)
-
-        return d1, d2, dist1, dist2
-
-    return None
 
 
 def plotSpread(runs, case):

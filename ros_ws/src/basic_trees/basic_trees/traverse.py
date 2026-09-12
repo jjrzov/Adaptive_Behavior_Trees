@@ -51,7 +51,7 @@ class CheapestFirst(Traversal):
             # All condition nodes have been expanded
             return None
 
-        print(f"Selected condition: {best_leaf.name}\t Its Cost: {best_cost}\n")
+        # print(f"Selected condition: {best_leaf.name}\t Its Cost: {best_cost}\n")
 
         return best_leaf    # Condition to be expanded
 

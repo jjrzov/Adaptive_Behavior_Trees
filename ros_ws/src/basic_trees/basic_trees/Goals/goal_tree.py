@@ -35,7 +35,7 @@ def getAction(action_str, action_database):
     return TestAction(name=action_str, action_database=action_database)
 
 
-def runTree(init_state, goal_term, action_database, traverse=BFS(), scorer=None):
+def runTree(init_state, goal_term, action_database, traverse=BFS()):
     # Create the base tree from the goal
     root = buildBaseTree(goal_term)
     tree = py_trees.trees.BehaviourTree(
@@ -67,22 +67,24 @@ def runTree(init_state, goal_term, action_database, traverse=BFS(), scorer=None)
             next_condition = traverse.getNextCondition(root, expanded_literals)
 
             if next_condition == None:
-                # print("No more conditions to expand - unsolvable")
+                print("No more conditions to expand - unsolvable")
                 return False, expansion_count, set()
             
-            # print(f"next_condition: {next_condition.name}")
+            print(f"next_condition: {next_condition.name}")
 
             # Add condition literals to expanded set
             expanded_literals.add(frozenset(next_condition.preconditions))  # Needs to be frozen to keep literals grouped as conditions
             
-            root = expand(root, next_condition, action_database, getAction, scorer)
+            root = expand(root, next_condition, action_database, getAction)
 
             prune(root, expanded_literals)  # Remove sequence structures that have already been expanded elsewhere
             expansion_count += 1
 
             tree.root = root
 
-    # py_trees.display.render_dot_tree(root, name=f"Paper_Test_w_DEAD_OR")
+        print(py_trees.display.unicode_tree(root, show_status=True))
+
+    py_trees.display.render_dot_tree(root, name=f"CompletenessTest_2Disjuncts")
     return root, expansion_count, set(blackboard.world_state)
 
 
@@ -173,20 +175,31 @@ def main():
     # tree = buildBaseTree(eq)
     # py_trees.display.render_dot_tree(tree, name=f"Goal_Base_Tree")
 
-    goal = OR(AND("L1", "L2"), "At(b, ab)")
-    init_state = {"At(b, pb)", "At(s, ps)", "Free(ab)", "Free(as)"}
+    # goal = OR(AND("L1", "L2"), "At(b, ab)")
+    # init_state = {"At(b, pb)", "At(s, ps)", "Free(ab)", "Free(as)"}
+
+    # action_database = {
+    #     "move(b, ab)" : {"pre" : ["Free(ab)", "WayClear"],    "add" : ["At(b, ab)"],               "del" : ["Free(ab)", "At(b, pb)"]},
+    #     "move(s, ab)" : {"pre" : ["Free(ab)"],                "add" : ["At(s, ab)", "WayClear"],   "del" : ["Free(ab)", "At(s, ps)"]},
+    #     "move(s, as)" : {"pre" : ["Free(as)"],                "add" : ["At(s, as)", "WayClear"],   "del" : ["Free(as)", "At(s, ps)"]},
+    #     }
+
+
+    # action_database["Action_L1"] = {"pre": set(), "add": {"L1"}, "del": set()}
+    # action_database["Action_L2"] = {"pre": set(), "add": {"L2"}, "del": set()}
+
+
+    init_state = {"at_start"}
+    goal = OR(AND("has_key", "at_A"), AND("has_key", "at_C"))
 
     action_database = {
-        "move(b, ab)" : {"pre" : ["Free(ab)", "WayClear"],    "add" : ["At(b, ab)"],               "del" : ["Free(ab)", "At(b, pb)"]},
-        "move(s, ab)" : {"pre" : ["Free(ab)"],                "add" : ["At(s, ab)", "WayClear"],   "del" : ["Free(ab)", "At(s, ps)"]},
-        "move(s, as)" : {"pre" : ["Free(as)"],                "add" : ["At(s, as)", "WayClear"],   "del" : ["Free(as)", "At(s, ps)"]},
-        }
+        "get_key":  {"pre": ["at_start"], "add": ["has_key"], "del": [],        "cost": 1.0},
+        "go_A":     {"pre": [],           "add": ["at_A"],    "del": ["at_C", "at_start"], "cost": 5.0},
+        "go_C":     {"pre": [],           "add": ["at_C"],    "del": ["at_A", "at_start"], "cost": 3.0},
+    }
 
 
-    action_database["Action_L1"] = {"pre": set(), "add": {"L1"}, "del": set()}
-    action_database["Action_L2"] = {"pre": set(), "add": {"L2"}, "del": set()}
-
-    root, _ = runTree(init_state, goal, action_database)
+    runTree(init_state, goal, action_database)
 
 if __name__ == '__main__':
     main()

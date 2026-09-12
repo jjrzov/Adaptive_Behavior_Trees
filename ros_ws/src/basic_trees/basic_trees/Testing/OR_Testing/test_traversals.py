@@ -1,9 +1,8 @@
 import csv
 import basic_trees.algorithms as alg
 
-from basic_trees.Testing.setup_tests import generateLiterals, generateSolution
+from basic_trees.Testing.setup_tests import generateLiterals, generateSolution, getDisjunctSetsWithCosts
 from basic_trees.Goals.goal_tree import runTree, runDNF
-from basic_trees.Testing.OR_Testing.histogram import getDisjunctSets
 from basic_trees.Goals.goal_types import OR, AND
 from basic_trees.Testing.test_tree import getNodeCount
 from basic_trees.traverse import *
@@ -25,14 +24,14 @@ def runCase(case, traversals):
         states_db, action_db = generateSolution(all_literals, case["distance"], case["iterations"])
 
         # Generate the disjuncts
-        sample = getDisjunctSets(states_db, action_db)
+        sample = getDisjunctSetsWithCosts(states_db, action_db)
         if sample is None:
             continue
         d1, d2, dist1, dist2 = sample   # the literal sets, not the distances
 
         for name, algo in traversals:
             goal = OR(AND(*d1), AND(*d2))
-
+        
             if name == "DNF":
                 root, exp, last_state = runDNF(states_db[0].copy(), [d1, d2], action_db, traverse=algo)
             else:
@@ -57,7 +56,7 @@ def main():
     print(f"literals = {test_case['literals']}, distance = {test_case['distance']}, iterations = {test_case['iterations']}")
 
     # All traversals for finding the next condition to expand
-    traversals = [("BFS", BFS()), ("DFS", DFS()), ("CheapestFirst", CheapestFirst()), ("DNF", BFS())]
+    traversals = [("BFS", BFS()), ("DFS", DFS()), ("CheapestFirst", CheapestFirst())]
 
     runCase(test_case, traversals)
 

@@ -14,7 +14,7 @@ from basic_trees.Sim.room_mapping import findStartRoom
 
 
 
-MOCK = False    # Use mock actions or real actions
+MOCK = True    # Use mock actions or real actions
 
 
 def setupWorld(blackboard, init_state, pose_map):
@@ -127,17 +127,17 @@ def main(args=None):
     rclpy.init(args=args)
 
     # Set enviroment
-    init_state = {"empty", "at_B"}
-    goal_state = OR(AND("at_A", "full"), AND("at_C", "full"))
+    # init_state = {"empty", "at_B"}
+    # goal_state = OR(AND("at_A", "full"), AND("at_C", "full"))
 
-    # Cost in action_database is only for MOCK but not implemented for MOCK yet
-    action_database = {
-            "load"     : {"pre" : ["empty"],            "add" : ["full"],                           "del" : ["empty"],          "cost" : 2.0},
-            "unload"   : {"pre" : ["full", "at_B"],     "add" : ["empty", "package_delivered"],     "del" : ["full"],           "cost" : 1.0},
-            "move_A"   : {"pre" : [],                   "add" : ["at_A"],                           "del" : ["at_B", "at_C"],   "cost" : 1.0},
-            "move_B"   : {"pre" : [],                   "add" : ["at_B"],                           "del" : ["at_A", "at_C"],   "cost" : 2.0},
-            "move_C"   : {"pre" : [],                   "add" : ["at_C"],                           "del" : ["at_A", "at_B"],   "cost" : 3.0},
-            } 
+    # # Cost in action_database is only for MOCK but not implemented for MOCK yet
+    # action_database = {
+    #         "load"     : {"pre" : ["empty"],            "add" : ["full"],                           "del" : ["empty"],          "cost" : 2.0},
+    #         "unload"   : {"pre" : ["full", "at_B"],     "add" : ["empty", "package_delivered"],     "del" : ["full"],           "cost" : 1.0},
+    #         "move_A"   : {"pre" : [],                   "add" : ["at_A"],                           "del" : ["at_B", "at_C"],   "cost" : 1.0},
+    #         "move_B"   : {"pre" : [],                   "add" : ["at_B"],                           "del" : ["at_A", "at_C"],   "cost" : 2.0},
+    #         "move_C"   : {"pre" : [],                   "add" : ["at_C"],                           "del" : ["at_A", "at_B"],   "cost" : 3.0},
+    #         } 
 
     pose_map = {
         "A": {"goal": (0.0, 4.5, 1.0),  "bounds": ((-3.25, 3.25), (0.75, 8.25)),    "literal": "at_A"}, # Red object
@@ -145,8 +145,18 @@ def main(args=None):
         "C": {"goal": (9.0, 0.0, 1.0),  "bounds": ((4.75, 13.25), (-8.25, 8.25)),   "literal": "at_C"},
     }
 
+    init_state = {"at_start"}
+    goal_state = OR(AND("has_key", "at_A"), AND("has_key", "at_C"))
+
+    action_database = {
+        "get_key":  {"pre": ["at_start"], "add": ["has_key"], "del": [],        "cost": 1.0},
+        "go_A":     {"pre": [],           "add": ["at_A"],    "del": ["at_C", "at_start"], "cost": 5.0},
+        "go_C":     {"pre": [],           "add": ["at_C"],    "del": ["at_A", "at_start"], "cost": 3.0},
+    }
+
+
     try:
-        runTree(init_state, goal_state, action_database, pose_map, CheapestFirst())
+        runTree(init_state, goal_state, action_database, pose_map, BFS())
     finally:
         rclpy.shutdown()
 
