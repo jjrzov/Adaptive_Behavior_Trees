@@ -1,12 +1,16 @@
 import py_trees
 
 from basic_trees.Conditions.condition import Condition
+from basic_trees.Goals.goal_types import GoalSelector
 
 
 expansion_counter = 0
 
 DEDUP_C_ATTR = False     # If TRUE, don't add an action if its c_attr has already been added
 SUBSET_PRUNE = True     # If TRUE, prune based off condition being a subset or an exact match of an already expanded condition
+
+PRUNE_STATS = {"no_progress": 0, "cross_branch": 0}
+
 
 
 def expand(root, c, action_database, get_action_fn, scorer=None):
@@ -108,6 +112,59 @@ def prune(root, expanded_literals):
                     pruned = fc in expanded_literals
 
                 if pruned:
+                    prune_nodes.append(node)
+
+        if isinstance(node, py_trees.composites.Composite):
+            q.extend(node.children)
+
+    for node in prune_nodes:
+        node.parent.remove_child(node)
+
+    return len(prune_nodes)
+
+
+def goalScope(node):
+    # Walk up the tree until a goal selector is found to declare the nodes scope
+    # If no selector return None
+    while node.parent is not None:
+        # print(f"  at {node.name}, parent {node.parent.name} type {type(node.parent)}")
+
+        if type(node.parent) is GoalSelector:
+            return node
+        
+        node = node.parent
+    return None
+
+
+def scopedPrune(root, expanded_scoped):
+    # Same funcitonality as prune(), but will go through the tree and only remove nodes
+    # if the expanded sequence structure is of the same scope (same branch of a selector/OR)
+    prune_nodes = []    # Store nodes to be removed
+
+    q = [root]  # Initialize queue with start node
+
+    while q:
+        # Keep searching while queue is not empty
+        node = q.pop(0)
+        if type(node) is py_trees.composites.Sequence:  # Need exact type comparison because GoalSequence is a subclass of Sequence
+            # if node is a sequence check that first child is a condition
+            first_child = node.children[0]
+            if type(first_child) is Condition:
+                fc = frozenset(first_child.preconditions)
+                node_scope = goalScope(node)
+
+                if SUBSET_PRUNE:
+                    # Prune if an already expanded condition is an exact match or subset of this one
+                    pruned = any(e <= fc and node_scope in scopes for e, scopes in expanded_scoped.items())
+                else:
+                    # Only prune if exact match has already been expanded
+                    pruned = node_scope in expanded_scoped.get(fc, set())
+
+                if pruned:
+                    # print(f"prune {node.name} cond={sorted(fc)} "
+                    #       f"scope={id(node_scope)}, {node_scope} "
+                    #       f"expanded_in={[id(s) for s in expanded_scoped.get(fc, set())]}")
+
                     prune_nodes.append(node)
 
         if isinstance(node, py_trees.composites.Composite):

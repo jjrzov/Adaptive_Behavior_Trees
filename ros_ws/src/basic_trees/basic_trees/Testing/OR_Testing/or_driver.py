@@ -30,17 +30,17 @@ def whichDisjunct(final_state, d1, d2):
 
 
 def runCase(case, traversals, out_path):
-    alg.SUBSET_PRUNE = False
+    alg.SUBSET_PRUNE = True
     alg.DEDUP_C_ATTR = False
 
     solved_count = 0
+    totals = {"no_progress": 0, "cross_branch": 0}
 
     with open(out_path, "w", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=FIELDS)
         writer.writeheader()
 
         for p_index in range(TARGET_RUNS):
-
             # Generate initial state, action database, and state pool as base paper does
             all_literals = generateLiterals(case["literals"])
             states_db, action_db = generateSolution(all_literals, case["distance"], case["iterations"])
@@ -57,6 +57,9 @@ def runCase(case, traversals, out_path):
 
 
             for name, algo in traversals:
+                alg.PRUNE_STATS["no_progress"] = 0
+                alg.PRUNE_STATS["cross_branch"] = 0
+
                 goal = OR(AND(*d1), AND(*d2))
 
                 if name == "DNF":
@@ -67,49 +70,44 @@ def runCase(case, traversals, out_path):
                 solved = root is not False  # Recored if solved problem
                 reached = whichDisjunct(last_state, d1, d2) if (solved and name != "DNF") else ""
                 cheaper = "d1" if dist1 <= dist2 else "d2"
+                totals["no_progress"] += alg.PRUNE_STATS["no_progress"]
+                totals["cross_branch"] += alg.PRUNE_STATS["cross_branch"]
 
-                if name == "DNF":
-                    writer.writerow({
-                        "problem_id": p_index,
-                        "arm": name,
-                        "dist1": dist1,
-                        "dist2": dist2,
-                        "min": min(dist1, dist2),
-                        "max": max(dist1, dist2),
-                        "spread": abs(dist1 - dist2),
-                        "solved": solved,
-                        "node_count": getNodeCount(root) if solved else "",
-                        "expansions": exp,
-                        "hops1": hops1,
-                        "hops2": hops2,
-                        "cheaper_by_cost": cheaper,
-                        "cheaper_by_hops": cheaper_by_hops,
-                        "agree": cheaper == cheaper_by_hops,
-                    })
-                else:
-                    writer.writerow({
-                        "problem_id": p_index,
-                        "arm": name,
-                        "dist1": dist1,
-                        "dist2": dist2,
-                        "min": min(dist1, dist2),
-                        "max": max(dist1, dist2),
-                        "spread": abs(dist1 - dist2),
-                        "solved": solved,
-                        "node_count": getNodeCount(root) if solved else "",
-                        "expansions": exp,
-                        "disjunct_reached": reached,
-                        "picked_cheapest": reached == cheaper,
-                        "hops1": hops1,
-                        "hops2": hops2,
-                        "cheaper_by_cost": cheaper,
-                        "cheaper_by_hops": cheaper_by_hops,
-                        "agree": cheaper == cheaper_by_hops,
-                    })
+                row = {
+                    "problem_id": p_index,
+                    "arm": name,
+                    "dist1": dist1,
+                    "dist2": dist2,
+                    "min": min(dist1, dist2),
+                    "max": max(dist1, dist2),
+                    "spread": abs(dist1 - dist2),
+                    "solved": solved,
+                    "node_count": getNodeCount(root) if solved else "",
+                    "expansions": exp,
+                    "hops1": hops1,
+                    "hops2": hops2,
+                    "cheaper_by_cost": cheaper,
+                    "cheaper_by_hops": cheaper_by_hops,
+                    "agree": cheaper == cheaper_by_hops,
+                }
+
+                if name != "DNF":
+                    row["disjunct_reached"] = reached
+                    row["picked_cheapest"] = reached == cheaper
+
+                writer.writerow(row)
 
             solved_count += 1
             if solved_count % 500 == 0:
                 print(f"  Case {case['case']}: {solved_count} problems")
+
+    total = totals["no_progress"] + totals["cross_branch"]
+    if total:
+        print(f"\nprune removals: {total}")
+        print(f"  no_progress:  {totals['no_progress']:>6} "
+              f"({100*totals['no_progress']/total:.1f}%)")
+        print(f"  cross_branch: {totals['cross_branch']:>6} "
+              f"({100*totals['cross_branch']/total:.1f}%)")
 
 
 def main():

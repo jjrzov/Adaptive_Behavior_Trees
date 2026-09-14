@@ -6,10 +6,12 @@ from basic_trees.Conditions.condition import Condition
 from basic_trees.Actions import TestAction
 from basic_trees.traverse import *
 from basic_trees.action_scorer import ConditionCompletionScorer, TimeScorer
-from basic_trees.algorithms import prune, expand
+from basic_trees.algorithms import prune, expand, goalScope, scopedPrune
 
 from basic_trees.Goals.goal_types import *
 
+
+PRUNE_MODE = "none"
 
 def createRoot(goal_state):
     # Create the root sequence
@@ -50,6 +52,8 @@ def runTree(init_state, goal_term, action_database, traverse=BFS()):
     tree.setup()
 
     expanded_literals = set()
+    expanded_scoped = {}     # Only used for scoped Prune, matches 
+
     expansion_count = 0
 
     while root.status != py_trees.common.Status.SUCCESS:
@@ -67,24 +71,32 @@ def runTree(init_state, goal_term, action_database, traverse=BFS()):
             next_condition = traverse.getNextCondition(root, expanded_literals)
 
             if next_condition == None:
-                print("No more conditions to expand - unsolvable")
+                # print("No more conditions to expand - unsolvable")
                 return False, expansion_count, set()
             
-            print(f"next_condition: {next_condition.name}")
+            # print(f"next_condition: {next_condition.name}")
 
             # Add condition literals to expanded set
-            expanded_literals.add(frozenset(next_condition.preconditions))  # Needs to be frozen to keep literals grouped as conditions
-            
+            fc = frozenset(next_condition.preconditions)    # Needs to be frozen to keep literals grouped as conditions
+            expanded_literals.add(fc)
+
+            scope = goalScope(next_condition)   # Must be called before expand because expand moves next_condition, changing its scope
+                            
             root = expand(root, next_condition, action_database, getAction)
 
-            prune(root, expanded_literals)  # Remove sequence structures that have already been expanded elsewhere
+            if PRUNE_MODE == "global":
+                prune(root, expanded_literals)  # Remove sequence structures that have already been expanded elsewhere
+            elif PRUNE_MODE == "scoped":
+                expanded_scoped.setdefault(fc, set()).add(scope)
+                scopedPrune(root, expanded_scoped)
+
             expansion_count += 1
 
             tree.root = root
 
-        print(py_trees.display.unicode_tree(root, show_status=True))
+        # print(py_trees.display.unicode_tree(root, show_status=True))
 
-    py_trees.display.render_dot_tree(root, name=f"CompletenessTest_2Disjuncts")
+    # py_trees.display.render_dot_tree(root, name=f"NoPrune")
     return root, expansion_count, set(blackboard.world_state)
 
 

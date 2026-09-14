@@ -23,25 +23,6 @@ class GoalSelector(py_trees.composites.Selector):
     pass
 
 
-def buildGoalTree(term):
-    # Build the goal tree from the input interface
-    children = []
-    for child in term.children:
-        if isinstance(child, (AND, OR)):
-            children.append(buildGoalTree(child))
-        else:
-            # String as input
-            children.append(Condition(name=child, preconditions={child}))
-
-    if isinstance(term, AND):
-        root = py_trees.composites.Sequence(name="Seq", memory=False)
-    elif isinstance(term, OR):
-        root = py_trees.composites.Selector(name="FB", memory=False)
-
-    root.add_children(children)
-    return root
-
-
 def flatten(root):
     # Flatten multiple operations of the same type into a list of literals
     literals = []
