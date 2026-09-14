@@ -181,10 +181,10 @@ def describeRatios(rows, n=15):
 if __name__ == "__main__":
     rows = load("or_sweep.csv")
 
-    describeSpread(rows)
-    describeAgreement(rows)
-    describeHops(rows)
-    describeRatios(rows)
+    # describeSpread(rows)
+    # describeAgreement(rows)
+    # describeHops(rows)
+    # describeRatios(rows)
 
     tradeoff(rows)
 

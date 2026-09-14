@@ -1,5 +1,6 @@
 import csv
 import basic_trees.algorithms as alg
+import basic_trees.Goals.goal_tree as gt
 
 from basic_trees.Testing.setup_tests import generateLiterals, generateSolution, getDisjunctSetsWithCosts, unweightedDistToSubset
 from basic_trees.Goals.goal_tree import runTree, runDNF
@@ -32,6 +33,7 @@ def whichDisjunct(final_state, d1, d2):
 def runCase(case, traversals, out_path):
     alg.SUBSET_PRUNE = True
     alg.DEDUP_C_ATTR = False
+    gt.PRUNE_MODE = 'scoped'
 
     solved_count = 0
     totals = {"no_progress": 0, "cross_branch": 0}
@@ -115,7 +117,7 @@ def main():
     print(f"literals = {test_case['literals']}, distance = {test_case['distance']}, iterations = {test_case['iterations']}")
 
     # All traversals for finding the next condition to expand
-    traversals = [("BFS", BFS()), ("DFS", DFS()), ("CheapestFirst", CheapestFirst())]
+    traversals = [("BFS", BFS()), ("DFS", DFS()), ("CheapestFirst", CheapestFirst()), ("DNF", BFS())]
 
     runCase(test_case, traversals, "or_sweep.csv")
 

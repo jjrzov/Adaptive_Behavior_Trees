@@ -100,7 +100,7 @@ def runTree(init_state, goal_term, action_database, traverse=BFS()):
     return root, expansion_count, set(blackboard.world_state)
 
 
-def runSharedTree(init_state, disjunct, action_database, traverse=BFS(), scorer=None):
+def runDisjunctTree(init_state, disjunct, action_database, traverse=BFS()):
     # Same as runTree but takes as input the set of expanded conditions so that
     # they can be shared across all of the separate disjunct trees
     
@@ -144,7 +144,7 @@ def runSharedTree(init_state, disjunct, action_database, traverse=BFS(), scorer=
             # Add condition literals to expanded set
             expanded_literals.add(frozenset(next_condition.preconditions))  # Needs to be frozen to keep literals grouped as conditions
 
-            root = expand(root, next_condition, action_database, getAction, scorer)
+            root = expand(root, next_condition, action_database, getAction)
 
             prune(root, expanded_literals)
             expansion_count += 1
@@ -162,11 +162,11 @@ def runDNF(init_state, disjuncts, action_db, traverse=BFS()):
 
     for d in disjuncts:
         # Create tree for each disjunct
-        root, exp, _ = runSharedTree(init_state.copy(), d, action_db, traverse) # Each tree needs the same init state
+        root, exp, _ = runDisjunctTree(init_state.copy(), d, action_db, traverse) # Each tree needs the same init state
 
         if root is False:
             # Not solvable, try next disjunct
-            print(f"Not Solvable\tPer Disjunct Expansions: {exp}\n")
+            # print(f"Not Solvable\tPer Disjunct Expansions: {exp}\n")
             continue
 
         subtrees.append(root)
