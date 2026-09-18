@@ -42,7 +42,7 @@ def generateLiterals(num_literals=NUM_OF_LITERALS):
     return [f"literal_{i}" for i in range(num_literals)]
 
 
-def generateSolution(all_literals, distance=DISTANCE, iterations=ITERATIONS):
+def generateSolution(all_literals, distance=DISTANCE, iterations=ITERATIONS, return_pool=False):
     # Step 1: Generate Initial State
     curr_state = set()
 
@@ -78,6 +78,9 @@ def generateSolution(all_literals, distance=DISTANCE, iterations=ITERATIONS):
         rand_action_branch = generateAction(all_literals, rand_state)
         action_database[f"action_branch_{i}"] = rand_action_branch # Store generated action in database
         states_pool.append(rand_state.union(rand_action_branch["add"]) - rand_action_branch["del"]) # Calculate branching successor state
+
+    if return_pool:
+        return states_database, action_database, states_pool
 
     return states_database, action_database
 

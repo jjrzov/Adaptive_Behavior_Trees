@@ -57,15 +57,31 @@ def buildBaseTree(term):
             else:
                 root = GoalSelector(name="FB", memory=False)
 
-            for item in res:                                                      # TODO: NO ORDER IN HOW LITERALS ARE PLACED, COULD MATTER FOR SEQUENCE OF AND TERMS like: AND(1st, 2nd)
-                if isinstance(item, str):
-                    child = Condition(name=item, preconditions={item})
-                else:
-                    # Flatten will return a list of strings and any opposite operations
-                    child = buildBaseTree(item) # Recurse to handle opposite type and branching        
-                
-                root.add_child(child)
+            strings = [i for i in res if isinstance(i, str)]
+            others = [i for i in res if not isinstance(i, str)]
+
+            if isinstance(term, AND) and strings:
+                # Merge the literals of an AND into one condition so expansion
+                # regresses them jointly
+                name = " & ".join(sorted(strings))
+                root.add_child(Condition(name=name, preconditions=set(strings)))
+            else:
+                for s in strings:
+                    root.add_child(Condition(name=s, preconditions={s}))
+
+            for item in others:
+                root.add_child(buildBaseTree(item))
+
             return root # Return root of tree
 
 
+
+def main():
+    root= buildBaseTree(AND('a','b', OR(AND('c'), AND('d'))))
+    py_trees.display.render_dot_tree(root, name=f"test_tree")
+
+
+
+if __name__ == '__main__':
+    main()
     

@@ -38,6 +38,10 @@ def getAction(action_str, action_database):
 
 
 def runTree(init_state, goal_term, action_database, traverse=BFS()):
+    if isinstance(traverse, scopedBFS) and PRUNE_MODE == "global":
+        print("INVALID TRAVERSAL AND PRUNE TYPE-ING\n")
+        raise
+
     # Create the base tree from the goal
     root = buildBaseTree(goal_term)
     tree = py_trees.trees.BehaviourTree(
@@ -68,9 +72,10 @@ def runTree(init_state, goal_term, action_database, traverse=BFS()):
 
         if root.status == py_trees.common.Status.FAILURE:
             # Expand when tree returns failure
-            next_condition = traverse.getNextCondition(root, expanded_literals)
+            expanded_record = expanded_scoped if isinstance(traverse, scopedBFS) else expanded_literals
+            next_condition = traverse.getNextCondition(root, expanded_record)
 
-            if next_condition == None:
+            if next_condition is None:
                 # print("No more conditions to expand - unsolvable")
                 return False, expansion_count, set()
             
@@ -79,15 +84,15 @@ def runTree(init_state, goal_term, action_database, traverse=BFS()):
             # Add condition literals to expanded set
             fc = frozenset(next_condition.preconditions)    # Needs to be frozen to keep literals grouped as conditions
             expanded_literals.add(fc)
-
-            scope = goalScope(next_condition)   # Must be called before expand because expand moves next_condition, changing its scope
                             
             root = expand(root, next_condition, action_database, getAction)
+
+            scope = goalScope(next_condition)   # Must be called after expand because expand moves next_condition, changing its scope
+            expanded_scoped.setdefault(fc, set()).add(scope)    # Always update for scoped pruning and scoped traversals
 
             if PRUNE_MODE == "global":
                 prune(root, expanded_literals)  # Remove sequence structures that have already been expanded elsewhere
             elif PRUNE_MODE == "scoped":
-                expanded_scoped.setdefault(fc, set()).add(scope)
                 scopedPrune(root, expanded_scoped)
 
             expansion_count += 1
@@ -99,6 +104,33 @@ def runTree(init_state, goal_term, action_database, traverse=BFS()):
     # py_trees.display.render_dot_tree(root, name=f"NoPrune")
     return root, expansion_count, set(blackboard.world_state)
 
+
+def fixpointBuilder(goal_term, action_database):
+    # Create a unified tree that is fully expanded out
+
+    # Create the base tree from the goal
+    root = buildBaseTree(goal_term)
+
+    expanded_scoped = {}     # Only used for scoped runs
+    expansion_count = 0
+
+    traverse = scopedBFS()
+
+    while (next_condition := traverse.getNextCondition(root, expanded_scoped)) is not None:
+        # Loop until no more condition to expand
+        fc = frozenset(next_condition.preconditions)    # Needs to be frozen to keep literals grouped as conditions
+
+        root = expand(root, next_condition, action_database, getAction)
+
+        scope = goalScope(next_condition)   # Must be called after expand because expand moves next_condition, changing its scope
+        expanded_scoped.setdefault(fc, set()).add(scope)    # Always update for scoped pruning and scoped traversals
+
+        scopedPrune(root, expanded_scoped)
+
+        expansion_count += 1
+
+    return root, expansion_count
+        
 
 def runDisjunctTree(init_state, disjunct, action_database, traverse=BFS()):
     # Same as runTree but takes as input the set of expanded conditions so that
@@ -210,7 +242,7 @@ def main():
         "go_C":     {"pre": [],           "add": ["at_C"],    "del": ["at_A", "at_start"], "cost": 3.0},
     }
 
-
+    
     runTree(init_state, goal, action_database)
 
 if __name__ == '__main__':

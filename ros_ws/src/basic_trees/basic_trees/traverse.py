@@ -2,6 +2,7 @@ import py_trees
 import math
 
 from basic_trees.Conditions.condition import Condition
+from basic_trees.algorithms import goalScope
 
 
 class Traversal:
@@ -20,6 +21,30 @@ class BFS(Traversal):
             if isinstance(node, Condition):
                 if frozenset(node.preconditions) not in expanded_literals:
                     return node # Unexpanded condition node
+            
+            if isinstance(node, py_trees.composites.Composite):
+                q.extend(node.children)
+        
+        return None # All condition nodes have been expanded
+
+
+class scopedBFS(Traversal):
+    def getNextCondition(self, root, expanded_scoped):
+        q = []  # Initialize queue
+        q.append(root)  # Add start node to queue
+
+        while len(q) != 0:
+            # Keep searching while queue is not empty
+            node = q.pop(0)
+            if isinstance(node, Condition):
+                fc = frozenset(node.preconditions)
+                node_scope = goalScope(node)    # Get scope of the condition
+
+                if node_scope not in expanded_scoped.get(fc, ()):
+                    return node
+
+                # if frozenset(node.preconditions) not in expanded_scoped:
+                    # return node # Unexpanded condition node
             
             if isinstance(node, py_trees.composites.Composite):
                 q.extend(node.children)
