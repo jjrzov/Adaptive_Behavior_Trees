@@ -4,7 +4,7 @@ in the states_pool that return SUCCESS from fully expanded trees
 '''
 import py_trees
 from collections import Counter
-from basic_trees.Goals.goal_types import OR, AND
+from basic_trees.Goals.goal_types import OR, AND, GoalSelector
 from basic_trees.Goals.goal_tree import setupWorld
 from basic_trees.Conditions.condition import Condition
 from basic_trees.Actions.test_action import TestAction
@@ -169,3 +169,79 @@ def diagnoseViolation(root, state, blackboard, goal_term, shared, action_db):
                   f"add={sorted(action_db[name]['add'])} del={sorted(dels)}")
 
     print(py_trees.display.unicode_tree(root, show_status=True))
+
+
+def subtreeActions(node):
+    # Distinct action names appearing in this subtree
+    return {n.name for n in node.iterate() if isinstance(n, TestAction)}
+
+
+def branchActions(root):
+    names = set()
+    for n in root.iterate():
+        if isinstance(n, GoalSelector):
+            names |= subtreeActions(n)
+    return names
+
+
+def conflictStats(u_root, shared, action_db):
+    # How often can an action in the OR branch break a shared literal
+    shared = set(shared)
+
+    # Domain level: independent of any tree
+    db_conflict = sum(1 for a in action_db.values() if set(a["del"]) & shared)
+    del_sizes = [len(a["del"]) for a in action_db.values()]
+
+    # Tree level: only actions actually admitted into the OR branch    
+    names = branchActions(u_root)
+    if not names:
+        return {"db_actions": len(action_db), "db_conflict": db_conflict,
+                "mean_del": sum(del_sizes) / len(del_sizes) if del_sizes else 0,
+                "branch_actions": 0, "branch_conflict": 0}
+
+    branch_conflict = sum(1 for n in names if set(action_db[n]["del"]) & shared)
+
+    return {
+        "db_actions": len(action_db),
+        "db_conflict": db_conflict,
+        "mean_del": sum(del_sizes) / len(del_sizes) if del_sizes else 0,
+        "branch_actions": len(names),
+        "branch_conflict": branch_conflict,
+    }
+
+
+def disjunctSolvable(disjunct, pool, action_db, cap=200):
+    # Forward BFS from each pooled state; intermediate states may leave the pool
+    target = set(disjunct)
+    actions = [(set(a["pre"]), set(a["add"]), set(a["del"])) for a in action_db.values()]
+
+    for start in pool:
+        if target <= start:
+            return True
+
+        seen = {start}
+        frontier = [start]
+        expanded = 0
+
+        while frontier and expanded < cap:
+            state = frontier.pop(0)
+            expanded += 1
+
+            for pre, add, dele in actions:
+                if not pre <= state:
+                    continue
+                nxt = frozenset((state - dele) | add)
+                if nxt in seen:
+                    continue
+                if target <= nxt:
+                    return True
+                seen.add(nxt)
+                frontier.append(nxt)
+
+    return False
+
+
+def solvableDisjuncts(disjuncts, pool, action_db):
+    # How many of the DNF arm's disjuncts are reachable at all
+    flags = [disjunctSolvable(d, pool, action_db) for d in disjuncts]
+    return sum(flags), len(flags)
