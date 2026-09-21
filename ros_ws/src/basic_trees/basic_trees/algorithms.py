@@ -10,7 +10,15 @@ DEDUP_C_ATTR = False     # If TRUE, don't add an action if its c_attr has alread
 SUBSET_PRUNE = True     # If TRUE, prune based off condition being a subset or an exact match of an already expanded condition
 
 PRUNE_STATS = {"no_progress": 0, "cross_branch": 0}
+PROTECT_STATS = {"filtered": 0}
 
+
+def expansionKey(node):
+    # Literals alone are not enough with protect implemented, 2 conditions with the
+    # same literals but different protect sets admit different actions
+
+    # If PROTECT_MODE off, then every protect set is empty, thus goes back to old behavior
+    return (frozenset(node.preconditions), frozenset(getattr(node, "protect", ())))
 
 
 def expand(root, c, action_database, get_action_fn, scorer=None):
@@ -21,6 +29,7 @@ def expand(root, c, action_database, get_action_fn, scorer=None):
     c_old_parent = c.parent # Need to store old parent because condition can't have 2 parents at once
 
     c_set = set(c.preconditions)
+    c_protect = set(getattr(c, "protect", ()))
     subtree_tau = py_trees.composites.Selector(name="fallback", memory=False)
 
     if not is_root:
@@ -40,8 +49,15 @@ def expand(root, c, action_database, get_action_fn, scorer=None):
         
         check1 = c_set.intersection(a_pre.union(a_add - a_del))
         check2 = (c_set - a_del) == c_set
+
+        # Do not admit actions that delete a sibling's goal literals
+        # An empty protect makes this always true
+        check3 = not(c_protect & a_del)
+
+        if check1 and check2 and not check3:
+            PROTECT_STATS["filtered"] += 1  # For analysis
     
-        if check1 and check2:
+        if check1 and check2 and check3:
             c_attr = a_pre.union(c_set - a_add)
 
             if c_set <= c_attr:
@@ -71,14 +87,12 @@ def expand(root, c, action_database, get_action_fn, scorer=None):
             seen_c_attrs.add(key)
 
         action_sequence = py_trees.composites.Sequence(name=f"a_seq_{expansion_counter}", memory=False)
-        cond_i = Condition(f"{sorted(c_attr)}", c_attr)
+        cond_i = Condition(f"{sorted(c_attr)}", c_attr, protect=c_protect)  # Protect never changes during expansion
         action_i = get_action_fn(action, action_database)
         action_sequence.add_children([cond_i, action_i])
 
         subtree_tau.add_children([action_sequence])
         expansion_counter += 1
-
-        
 
     # Check if condition was root
     if is_root:
@@ -102,14 +116,14 @@ def prune(root, expanded_literals):
             # if node is a sequence check that first child is a condition
             first_child = node.children[0]
             if type(first_child) is Condition:
-                fc = frozenset(first_child.preconditions)
+                fc, fc_protect = expansionKey(first_child)
 
                 if SUBSET_PRUNE:
-                    # Prune if an already expanded condition is an exact match or subset of this one
-                    pruned = any(e <= fc for e in expanded_literals)
+                    # Prune if an already expanded condition is an exact match or subset
+                    pruned = any(e <= fc and e_protect == fc_protect for e, e_protect in expanded_literals)
                 else:
                     # Only prune if exact match has already been expanded
-                    pruned = fc in expanded_literals
+                    pruned = (fc, fc_protect) in expanded_literals
 
                 if pruned:
                     prune_nodes.append(node)
@@ -150,15 +164,17 @@ def scopedPrune(root, expanded_scoped):
             # if node is a sequence check that first child is a condition
             first_child = node.children[0]
             if type(first_child) is Condition:
-                fc = frozenset(first_child.preconditions)
+                key_pair = expansionKey(first_child)
+                fc, fc_protect = frozenset(key_pair)
                 node_scope = goalScope(node)
 
                 if SUBSET_PRUNE:
-                    # Prune if an already expanded condition is an exact match or subset of this one
-                    pruned = any(e <= fc and node_scope in scopes for e, scopes in expanded_scoped.items())
+                    # Prune if an already expanded condition is an exact match or subset
+                    pruned = any(e <= fc and e_protect == fc_protect and node_scope in scopes
+                                 for (e, e_protect), scopes in expanded_scoped.items())
                 else:
                     # Only prune if exact match has already been expanded
-                    pruned = node_scope in expanded_scoped.get(fc, set())
+                    pruned = node_scope in expanded_scoped.get(key_pair, set())
 
                 if pruned:
                     # print(f"prune {node.name} cond={sorted(fc)} "

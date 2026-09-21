@@ -40,8 +40,73 @@ def flatten(root):
     return literals
 
 
-def buildBaseTree(term):
-    # Build the initial tree shape based on the goal                            TODO: Iterative ANDs are still separate conditions not one big condition
+# How much sibling protection buildBaseTree has
+'''
+    "off":          no protection
+
+    "left":         protect against LEFT SIBLINGS ONLY. A sequence child that already
+                    returned success this tick is not rechecked, thus an action in a
+                    later sibling must not delete its literals
+    
+    "symmetric":    protect against ALL SIBLINGS. Removes mutual destruction that
+                    leaves a sequence oscillating and never returning SUCCESS,
+                    violating finite time success
+'''
+
+PROTECT_MODE = "off"
+
+
+def goalLiterals(node):
+    # Return every goal literal a base tree subtree is meant to make true
+    if isinstance(node, Condition):
+        return set(node.preconditions)
+
+    if isinstance(node, py_trees.composites.Composite):
+        literals = set()
+
+        for child in node.children:
+            literals |= goalLiterals(child)
+
+        return literals
+    return set()
+
+
+def applyProtect(node, literals):
+    # Adds literals to every condition's protect set in this subtree
+    # A condition under multiple nested GoalSequences accumulates all of them
+    if not literals:
+        return
+
+    if isinstance(node, Condition):
+        node.protect |= set(literals)
+
+    if isinstance(node, py_trees.composites.Composite):
+        for child in node.children:
+            applyProtect(child, literals)
+
+
+def seedProtect(root, mode):
+    # Setup sibling protection on a GoalSequence
+    if mode == "off" or not isinstance(root, GoalSequence):
+        return
+
+    children = list(root.children)
+    literals = [goalLiterals(child) for child in children]
+
+    for index, child in enumerate(children):
+        if mode == "left":
+            protect_literals = set().union(*literals[:index])
+        else:
+            protect_literals = set().union(*[lits for other, lits in enumerate(literals) 
+                                             if other != index])
+
+        applyProtect(child, protect_literals)
+
+
+def buildBaseTree(term, mode=None):
+    # Build the initial tree shape based on the goal
+    mode = PROTECT_MODE if mode is None else mode
+
     if isinstance(term, str):
         return Condition(name=term, preconditions={term})
     else:
@@ -71,6 +136,9 @@ def buildBaseTree(term):
 
             for item in others:
                 root.add_child(buildBaseTree(item))
+
+            # A child's protect set is defined by its siblings so after building
+            seedProtect(root, mode)
 
             return root # Return root of tree
 

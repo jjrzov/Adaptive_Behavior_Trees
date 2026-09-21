@@ -1,9 +1,15 @@
 import py_trees
 
 class Condition(py_trees.behaviour.Behaviour):
-    def __init__(self, name="Condition", preconditions={}):
+    def __init__(self, name="Condition", preconditions={}, protect=None):
         super().__init__(name=name)
         self.preconditions = set(preconditions)
+
+        '''
+        Contians goal literals of an above GoalSequence sibling branch that
+        no action below this condition can delete
+        '''
+        self.protect = set(protect) if protect else set()
         
         # Set up blackboard client
         self.blackboard = self.attach_blackboard_client(name=name)
