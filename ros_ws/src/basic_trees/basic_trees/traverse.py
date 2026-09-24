@@ -2,7 +2,7 @@ import py_trees
 import math
 
 from basic_trees.Conditions.condition import Condition
-from basic_trees.algorithms import goalScope
+from basic_trees.algorithms import goalScope, expansionKey
 
 
 class Traversal:
@@ -19,7 +19,7 @@ class BFS(Traversal):
             # Keep searching while queue is not empty
             node = q.pop(0)
             if isinstance(node, Condition):
-                if frozenset(node.preconditions) not in expanded_literals:
+                if expansionKey(node) not in expanded_literals:
                     return node # Unexpanded condition node
             
             if isinstance(node, py_trees.composites.Composite):
@@ -37,7 +37,7 @@ class scopedBFS(Traversal):
             # Keep searching while queue is not empty
             node = q.pop(0)
             if isinstance(node, Condition):
-                fc = frozenset(node.preconditions)
+                fc = expansionKey(node)
                 node_scope = goalScope(node)    # Get scope of the condition
 
                 if node_scope not in expanded_scoped.get(fc, ()):
@@ -55,7 +55,7 @@ class scopedBFS(Traversal):
 class DFS(Traversal):
     def getNextCondition(self, root, expanded_literals):
         if isinstance(root, Condition):
-            if frozenset(root.preconditions) not in expanded_literals:
+            if expansionKey(root) not in expanded_literals:
                 return root # Unexpanded condition node
             
         if isinstance(root, py_trees.composites.Composite):
@@ -84,7 +84,7 @@ class CheapestFirst(Traversal):
     def cost(self, node, expanded_literals):
         # Dont care whether Goal or normal Sequence/Selector
         if isinstance(node, Condition):
-            if frozenset(node.preconditions) in expanded_literals:
+            if expansionKey(node) in expanded_literals:
                 return None, 0
             elif len(node.preconditions - node.blackboard.world_state) == 0:
                 return None, 0   # Don't expand conditions that are already true

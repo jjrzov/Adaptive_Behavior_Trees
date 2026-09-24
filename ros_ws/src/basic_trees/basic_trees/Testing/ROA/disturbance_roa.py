@@ -44,16 +44,13 @@ because it is the right shape for that test in a shared-structure domain.
 import csv
 import py_trees
 
-from basic_trees.algorithms import expand, prune, goalScope, scopedPrune
+from basic_trees.algorithms import expand, prune, goalScope, scopedPrune, expansionKey
 from basic_trees.traverse import BFS, scopedBFS
 from basic_trees.Goals.goal_types import AND, OR, GoalSelector
-from basic_trees.Goals.goal_tree import (buildBaseTree, fixpointBuilder,
-                                         getAction, setupWorld)
+from basic_trees.Goals.goal_tree import buildBaseTree, fixpointBuilder, getAction, setupWorld
 from basic_trees.Testing.ROA.Util.membership import goalSatisfied, treeStats
 from basic_trees.Testing.ROA.Util.nav_domain import enumerateStates
-from basic_trees.Testing.ROA.Util.layered_domain import (
-    buildLayeredDomain, layeredInit, layeredTargets, layeredDisjuncts,
-    yLiteral)
+from basic_trees.Testing.ROA.Util.layered_domain import buildLayeredDomain, layeredInit, layeredTargets, layeredDisjuncts, yLiteral
 
 
 RECOVERED = "recovered"
@@ -84,12 +81,11 @@ def fixpointBuilderGlobal(goal_term, action_database, cap=400):
     expansion_count = 0
     traverse = BFS()
 
-    while (next_condition := traverse.getNextCondition(
-            root, expanded_literals)) is not None:
+    while (next_condition := traverse.getNextCondition(root, expanded_literals)) is not None:
         if expansion_count >= cap:
             raise RuntimeError("global fixpoint did not terminate")
 
-        expanded_literals.add(frozenset(next_condition.preconditions))
+        expanded_literals.add(expansionKey(next_condition))
 
         root = expand(root, next_condition, action_database, getAction)
         prune(root, expanded_literals)
@@ -173,8 +169,7 @@ def runTrial(root, init_state, inject_state, goal_term, blackboard,
     # The world moves. The tree keeps its node status - no reset.
     setupWorld(blackboard, set(inject_state))
 
-    outcome, ticks, false_success = tickUntilGoal(
-        root, blackboard, goal_term, RECOVER_CAP)
+    outcome, ticks, false_success = tickUntilGoal(root, blackboard, goal_term, RECOVER_CAP)
 
     return {
         "outcome": outcome,
@@ -193,8 +188,7 @@ def buildProblem(gate=True, gate_branch=0):
 
     init_state = layeredInit(CHAIN_DEPTH, gate=gate)
     shared, branches = layeredTargets(CHAIN_DEPTH, BRANCH_DEPTH, N_BRANCHES)
-    goal_term = AND(*sorted(shared),
-                    OR(*[AND(*sorted(b)) for b in branches]))
+    goal_term = AND(*sorted(shared), OR(*[AND(*sorted(b)) for b in branches]))
 
     return action_db, init_state, goal_term, shared, branches
 
@@ -243,8 +237,7 @@ def main():
         skipped = 0
 
         for index, inject in enumerate(injects):
-            result = runTrial(root, init_state, inject, goal_term, blackboard,
-                              branches)
+            result = runTrial(root, init_state, inject, goal_term, blackboard, branches)
 
             if result is None:
                 skipped += 1

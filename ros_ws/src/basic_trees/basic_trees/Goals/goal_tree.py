@@ -6,7 +6,7 @@ from basic_trees.Conditions.condition import Condition
 from basic_trees.Actions import TestAction
 from basic_trees.traverse import *
 from basic_trees.action_scorer import ConditionCompletionScorer, TimeScorer
-from basic_trees.algorithms import prune, expand, goalScope, scopedPrune
+from basic_trees.algorithms import prune, expand, goalScope, scopedPrune, expansionKey
 
 from basic_trees.Goals.goal_types import *
 
@@ -82,7 +82,7 @@ def runTree(init_state, goal_term, action_database, traverse=BFS()):
             # print(f"next_condition: {next_condition.name}")
 
             # Add condition literals to expanded set
-            fc = frozenset(next_condition.preconditions)    # Needs to be frozen to keep literals grouped as conditions
+            fc = expansionKey(next_condition)    # (literals, protect) b/c a protected condition is not the same as an unprotected one
             expanded_literals.add(fc)
                             
             root = expand(root, next_condition, action_database, getAction)
@@ -105,11 +105,11 @@ def runTree(init_state, goal_term, action_database, traverse=BFS()):
     return root, expansion_count, set(blackboard.world_state)
 
 
-def fixpointBuilder(goal_term, action_database):
+def fixpointBuilder(goal_term, action_database, protect_mode=None):
     # Create a unified tree that is fully expanded out
 
     # Create the base tree from the goal
-    root = buildBaseTree(goal_term)
+    root = buildBaseTree(goal_term, mode=protect_mode)
 
     expanded_scoped = {}     # Only used for scoped runs
     expansion_count = 0
@@ -118,7 +118,7 @@ def fixpointBuilder(goal_term, action_database):
 
     while (next_condition := traverse.getNextCondition(root, expanded_scoped)) is not None:
         # Loop until no more condition to expand
-        fc = frozenset(next_condition.preconditions)    # Needs to be frozen to keep literals grouped as conditions
+        fc = expansionKey(next_condition)    # (literals, protect) 
 
         root = expand(root, next_condition, action_database, getAction)
 
@@ -174,7 +174,7 @@ def runDisjunctTree(init_state, disjunct, action_database, traverse=BFS()):
             # print(f"next_condition: {next_condition.name}")
 
             # Add condition literals to expanded set
-            expanded_literals.add(frozenset(next_condition.preconditions))  # Needs to be frozen to keep literals grouped as conditions
+            expanded_literals.add(expansionKey(next_condition))  # (literals, protect)
 
             root = expand(root, next_condition, action_database, getAction)
 
