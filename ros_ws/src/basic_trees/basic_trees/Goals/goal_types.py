@@ -135,7 +135,7 @@ def buildBaseTree(term, mode=None):
                     root.add_child(Condition(name=s, preconditions={s}))
 
             for item in others:
-                root.add_child(buildBaseTree(item))
+                root.add_child(buildBaseTree(item, mode=mode))
 
             # A child's protect set is defined by its siblings so after building
             seedProtect(root, mode)

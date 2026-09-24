@@ -245,3 +245,46 @@ def solvableDisjuncts(disjuncts, pool, action_db):
     # How many of the DNF arm's disjuncts are reachable at all
     flags = [disjunctSolvable(d, pool, action_db) for d in disjuncts]
     return sum(flags), len(flags)
+
+def sweepArms(pool, arms, goal_term, blackboard, reference, cap=100):
+    # N-arm version of sweep(). `arms` maps a name to a built root, one of
+    # which is named by `reference` and is the sound-and-complete baseline
+    # every other arm is scored against.
+    #
+    # Returns per-state outcomes rather than only bucket totals, so the caller
+    # can separate an honest failure from a dead-end false success
+    # (MEM_VIOLATION) instead of summing them into one "neither".
+    for root in arms.values():
+        assertMemoryless(root)
+
+    outcomes = {name: Counter() for name in arms}
+    false_success = {name: 0 for name in arms}
+    solved = {name: set() for name in arms}
+
+    for state in pool:
+        for name, root in arms.items():
+            result, falses = membership(root, state, blackboard, goal_term, cap)
+
+            outcomes[name][result] += 1
+            false_success[name] += falses
+
+            if result == MEM_SUCCESS:
+                solved[name].add(state)
+
+    reference_solved = solved[reference]
+    buckets = {}
+
+    for name in arms:
+        if name == reference:
+            continue
+
+        arm_solved = solved[name]
+
+        buckets[name] = {
+            "both": len(arm_solved & reference_solved),
+            "arm_only": len(arm_solved - reference_solved),
+            "ref_only": len(reference_solved - arm_solved),
+            "neither": len(pool) - len(arm_solved | reference_solved),
+        }
+
+    return outcomes, false_success, solved, buckets

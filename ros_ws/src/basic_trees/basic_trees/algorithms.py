@@ -165,7 +165,7 @@ def scopedPrune(root, expanded_scoped):
             first_child = node.children[0]
             if type(first_child) is Condition:
                 key_pair = expansionKey(first_child)
-                fc, fc_protect = frozenset(key_pair)
+                fc, fc_protect = key_pair
                 node_scope = goalScope(node)
 
                 if SUBSET_PRUNE:
