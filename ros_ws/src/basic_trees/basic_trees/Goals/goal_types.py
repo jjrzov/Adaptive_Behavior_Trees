@@ -71,6 +71,18 @@ def goalLiterals(node):
     return set()
 
 
+def goalSatisfied(term, state):
+    # Recursively evaluate state of the tree
+    # Works for nested or flat AND/OR terms
+    if isinstance(term, str):
+        return term in state
+    elif isinstance(term, AND):
+        return all(goalSatisfied(child, state) for child in term.children)
+    else:
+        # term is an OR
+        return any(goalSatisfied(child, state) for child in term.children)
+
+
 def applyProtect(node, literals):
     # Adds literals to every condition's protect set in this subtree
     # A condition under multiple nested GoalSequences accumulates all of them

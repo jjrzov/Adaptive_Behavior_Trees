@@ -69,22 +69,25 @@ class DFS(Traversal):
 
 
 class CheapestFirst(Traversal):
+    def isExpanded(self, node, expanded_literals):
+        # Global record: a condition counts as expanded wherever it appears,
+        # so the same literals in another disjunct are treated as done
+        return expansionKey(node) in expanded_literals
+
+    
     def getNextCondition(self, root, expanded_literals):
         best_leaf, best_cost = self.cost(root, expanded_literals)
         
         if best_leaf == None or best_cost == math.inf:
             # All condition nodes have been expanded
             return None
-
-        # print(f"Selected condition: {best_leaf.name}\t Its Cost: {best_cost}\n")
-
         return best_leaf    # Condition to be expanded
 
 
     def cost(self, node, expanded_literals):
         # Dont care whether Goal or normal Sequence/Selector
         if isinstance(node, Condition):
-            if expansionKey(node) in expanded_literals:
+            if self.isExpanded(node, expanded_literals):
                 return None, 0
             elif len(node.preconditions - node.blackboard.world_state) == 0:
                 return None, 0   # Don't expand conditions that are already true
@@ -106,12 +109,6 @@ class CheapestFirst(Traversal):
             
             elif isinstance(node, py_trees.composites.Selector):
                 # Cost for selector is equal to the cheapest cost of any of its children
-                
-                # print(f"SELECTOR\n")
-                # for child, score in children_res:
-                #     print(f"\tChild: {child}\t\tScore: {score}\n")
-                
-                
                 best_candidate, best_cost = None, math.inf
                 for candidate, child_cost in children_res:
                     if candidate is None:
@@ -128,3 +125,16 @@ class CheapestFirst(Traversal):
         else:
             # Ignore action nodes
             return None, node.getCost()
+
+
+class scopedCheapestFirst(CheapestFirst):
+    # CheapestFirst over a scoped expansion record, so it matches scopedBFS and
+    # scopedPrune. Only the expansion test differs: a condition counts as
+    # expanded only within its own GoalSelector branch, so the same literals in
+    # another disjunct stay expandable and that disjunct keeps its route.
+    #
+    # This matters for cost specifically. With a global record the cheaper
+    # disjunct can have its route removed before it is ever costed, which
+    # defeats the point of selecting on cost.
+    def isExpanded(self, node, expanded_scoped):
+        return goalScope(node) in expanded_scoped.get(expansionKey(node), ())

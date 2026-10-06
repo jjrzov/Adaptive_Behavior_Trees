@@ -46,12 +46,11 @@ import py_trees
 
 from basic_trees.algorithms import expand, prune, goalScope, scopedPrune, expansionKey
 from basic_trees.traverse import BFS, scopedBFS
-from basic_trees.Goals.goal_types import AND, OR, GoalSelector
+from basic_trees.Goals.goal_types import AND, OR, GoalSelector, goalSatisfied
 from basic_trees.Goals.goal_tree import buildBaseTree, fixpointBuilder, getAction, setupWorld
-from basic_trees.Testing.ROA.Util.membership import goalSatisfied, treeStats
+from basic_trees.Testing.ROA.Util.membership import treeStats
 from basic_trees.Testing.ROA.Util.nav_domain import enumerateStates
 from basic_trees.Testing.ROA.Util.layered_domain import buildLayeredDomain, layeredInit, layeredTargets, layeredDisjuncts, yLiteral
-
 
 RECOVERED = "recovered"
 STUCK = "stuck"

@@ -2,19 +2,27 @@ import py_trees
 import py_trees_ros
 import rclpy
 
+import basic_trees.algorithms as alg
+
 from basic_trees.Conditions.condition import Condition
-from basic_trees.Actions import Load, Unload, SimActionFactory
-from basic_trees.Actions import MockMoveA, MockMoveB, MockMoveC
-from basic_trees.traverse import BFS, DFS, CheapestFirst
-from basic_trees.algorithms import prune, expand
+from basic_trees.Actions import Load, Unload, SimActionFactory, MockMoveA, MockMoveB, MockMoveC
+from basic_trees.traverse import BFS, scopedBFS, scopedCheapestFirst
+from basic_trees.algorithms import expand, expansionKey, goalScope, scopedPrune
 from basic_trees.Goals.goal_tree import buildBaseTree
-from basic_trees.Goals.goal_types import AND, OR
+from basic_trees.Goals.goal_types import AND, OR, goalSatisfied
 from basic_trees.Sim import PoseObserver, CostMapping
 from basic_trees.Sim.room_mapping import findStartRoom
 
 
 
 MOCK = True    # Use mock actions or real actions
+
+# "off" | "left" | "symmetric". Sibling protection is seeded at GoalSequence
+# boundaries, so it is inert for a goal with no multi-child GoalSequence and
+# inert for any problem where no admitted action deletes a sibling's goal
+# literal. Left enabled because it costs nothing in those cases and the
+# filtered counter reports which case you are in.
+PROTECT_MODE = "left"
 
 
 def setupWorld(blackboard, init_state, pose_map):
@@ -51,9 +59,11 @@ def getAction(action_str, action_database):
     return action_map_mock[action_str]()
 
 
-def runTree(init_state, goal_state, action_database, pose_map, traverse=BFS()):
-    # Create the tree
-    root = buildBaseTree(goal_state)
+def runTree(init_state, goal_state, action_database, pose_map, traverse=scopedBFS(), tick_period=0.1):
+    # Create the tree with sibling protection
+    alg.PROTECT_STATS["filtered"] = 0
+    root = buildBaseTree(goal_state, mode=PROTECT_MODE)
+
     tree = py_trees_ros.trees.BehaviourTree(
         root=root,
         unicode_tree_debug=False        # Set to True if you want to see print out of tree node statusesss
@@ -68,9 +78,10 @@ def runTree(init_state, goal_state, action_database, pose_map, traverse=BFS()):
         tree.setup(node_name="my_tree", timeout=15.0)
     except py_trees_ros.exceptions.TimedOutError as e:
         print("ERROR: TREE SETUP TIMED OUT\n")
+        tree.shutdown()
         return False
     
-    expanded_literals = set()
+    expanded_scoped = {}     # Scoped so a condition expanded in one disjunct does not remove the other's route
     curr_world_state = set(blackboard.world_state)   # For printing world state as tree running
 
     if not MOCK:
@@ -81,46 +92,100 @@ def runTree(init_state, goal_state, action_database, pose_map, traverse=BFS()):
 
         action_factory = SimActionFactory(tree.node, action_database, pose_map, room_costs)
 
+    ever_achieved = False       # Has the goal held at least once
+    holding = False             # Did the goal hold on the previous tick
+    exhausted = False           # Nothing left to expand
+    false_successes = 0         # Root said SUCCESS while the goal was false
+    disturbances = 0            # Goal held, then stopped holding
+    reported_filtered = 0       # Last protect count printed
+
+    print(f"protect mode: {PROTECT_MODE}")
 
 
-    while root.status != py_trees.common.Status.SUCCESS:    # TODO: Eventually should tick forever in case of disturbances
-        # Handle tree returning RUNNING or FAILURE
-        rclpy.spin_once(tree.node, timeout_sec=0)   # Need to spin for updates
-        tree.tick()
+    try:
+        while rclpy.ok():
+            # Handle tree returning RUNNING or FAILURE
+            rclpy.spin_once(tree.node, timeout_sec=tick_period)    # Need to spin for updates, and this paces the loop
+            tree.tick()
 
-        if blackboard.world_state != curr_world_state:
-            print(f"--- tick ---")
-            print(f"status: {root.status}")
-            print(f"world_state: {blackboard.world_state}")
-            curr_world_state = set(blackboard.world_state)
+            if blackboard.world_state != curr_world_state:
+                # print(f"--- tick ---")
+                # print(f"status: {root.status}")
+                # print(f"world_state: {blackboard.world_state}")
+                curr_world_state = set(blackboard.world_state)
 
+            satisfied = goalSatisfied(goal_state, blackboard.world_state)
+        
+            if root.status == py_trees.common.Status.SUCCESS and not satisfied:
+                false_successes += 1
+                print(f"  FALSE SUCCESS #{false_successes}: root reports SUCCESS, goal does not hold")
 
-        if root.status == py_trees.common.Status.FAILURE:
-            # Expand when tree returns failure
-            next_condition = traverse.getNextCondition(root, expanded_literals)
+            if satisfied and not holding:
+                ever_achieved = True
+                print("  GOAL ACHIEVED - still ticking, watching for disturbances")
+                py_trees.display.render_dot_tree(root, name="ROS_TREE")                 # UNCOMMENT TO RENDER THE TREE
+            elif holding and not satisfied:
+                disturbances += 1
+                print(f"  DISTURBANCE #{disturbances}: goal no longer holds, recovering")
+
+            holding = satisfied
+
+            
+            if root.status == py_trees.common.Status.RUNNING:
+                continue # Action currently running, let it finish
+
+            if satisfied:
+                continue # Goal holds, nothing to plan for, but keep ticking so a disturbance is seen
+
+            if exhausted:
+                # Already fully expanded but a later disturbance could make the existing tree work
+                # So keep ticking
+                continue
+
+            
+            # FAILURE, or SUCCESS on an unsatisfied goal, tree is not yet a solution, keep expanding
+            next_condition = traverse.getNextCondition(root, expanded_scoped)
 
             if next_condition is None:
-                print("No more conditions to expand - unsolvable")
-                tree.shutdown() # Delete tree
-                return False
-            
+                exhausted = True
+                print(f"No more conditions to expand" + (" - unsolvable" if not ever_achieved
+                         else " - cannot recover from this disturbance"))
+                continue
+
             print(f"next_condition: {next_condition.name}")
 
-            # Add condition literals to expanded set
-            expanded_literals.add(frozenset(next_condition.preconditions))  # Needs to be frozen to keep literals grouped as conditions
+            fc = expansionKey(next_condition)   # (literals, protect): a protected condition is not interchangeable with an unprotected one
 
             if MOCK:
                 root = expand(root, next_condition, action_database, getAction)
             else:
                 root = expand(root, next_condition, action_database, action_factory)
 
-            prune(root, expanded_literals)  # Remove sequence structures that have already been expanded elsewhere
+            expanded_scoped.setdefault(fc, set()).add(goalScope(next_condition))
+            scopedPrune(root, expanded_scoped)  # Remove sequence structures already expanded in this same scope
 
             tree.root = root
 
-    py_trees.display.render_dot_tree(root, name="ROS_TREEs12")
-    tree.shutdown() # Delete tree
-    return True
+
+            # Report protect activity only when it changes. Nonzero means this
+            # problem genuinely interferes.
+            filtered = alg.PROTECT_STATS["filtered"]
+            if filtered > reported_filtered:
+                print(f"  protect filtered {filtered} action(s) so far - this problem DOES interfere")
+                reported_filtered = filtered
+
+    except KeyboardInterrupt:
+        print("\n  interrupted")
+
+    finally:
+        print(f"\n  goal achieved    : {ever_achieved}")
+        print(f"  disturbances     : {disturbances}")
+        print(f"  false successes  : {false_successes}")
+        print(f"  protect mode     : {PROTECT_MODE}")
+        print(f"  actions filtered : {alg.PROTECT_STATS['filtered']}")
+        tree.shutdown() # Delete tree
+
+    return ever_achieved
 
 
 def main(args=None):
@@ -156,7 +221,7 @@ def main(args=None):
 
 
     try:
-        runTree(init_state, goal_state, action_database, pose_map, BFS())
+        runTree(init_state, goal_state, action_database, pose_map)
     finally:
         rclpy.shutdown()
 

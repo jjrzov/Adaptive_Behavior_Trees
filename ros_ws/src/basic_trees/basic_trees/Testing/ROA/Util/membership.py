@@ -16,16 +16,16 @@ MEM_CAP = 3
 MEM_VIOLATION = 4
 
 
-def goalSatisfied(term, state):
-    # Recursively evaluate state of the tree
-    # Works for nested or flat AND/OR terms
-    if isinstance(term, str):
-        return term in state
-    elif isinstance(term, AND):
-        return all(goalSatisfied(child, state) for child in term.children)
-    else:
-        # term is an OR
-        return any(goalSatisfied(child, state) for child in term.children)
+# def goalSatisfied(term, state):
+#     # Recursively evaluate state of the tree
+#     # Works for nested or flat AND/OR terms
+#     if isinstance(term, str):
+#         return term in state
+#     elif isinstance(term, AND):
+#         return all(goalSatisfied(child, state) for child in term.children)
+#     else:
+#         # term is an OR
+#         return any(goalSatisfied(child, state) for child in term.children)
 
 
 def assertMemoryless(root):
