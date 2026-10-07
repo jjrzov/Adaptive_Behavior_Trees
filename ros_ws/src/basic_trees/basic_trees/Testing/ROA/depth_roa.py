@@ -30,7 +30,7 @@ FIELDS = ["axis", "chain_depth", "branch_depth", "n_branches", "reversible",
           "both", "unified_only", "dnf_only", "neither",
           "u_false_success", "d_false_success"]
 
-CAP = 200
+CAP = 100
 REVERSIBLE = False      # False for the scaling claim, True for disturbance reuse
 OUT = "depth_roa.csv"
 
@@ -38,7 +38,7 @@ OUT = "depth_roa.csv"
 BASE = {"chain_depth": 3, "branch_depth": 2, "n_branches": 2}
 
 SWEEPS = {
-    "chain_depth": [0, 1, 2, 3, 4, 5, 6, 8, 10],
+    "chain_depth": [0, 1, 2, 3, 4, 5, 6, 8, 12, 20, 30, 40],
     "branch_depth": [1, 2, 3, 4, 5],
     "n_branches": [2, 3, 4, 5, 6],
 }
