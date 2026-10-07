@@ -20,9 +20,7 @@ import py_trees
 from basic_trees.Goals.goal_types import AND, OR, GoalSelector
 from basic_trees.Goals.goal_tree import fixpointBuilder
 from basic_trees.Testing.ROA.Util.membership import sweep, treeStats
-from basic_trees.Testing.ROA.Util.nav_domain import enumerateStates
-from basic_trees.Testing.ROA.Util.layered_domain import (
-    buildLayeredDomain, layeredInit, layeredTargets, layeredDisjuncts)
+from basic_trees.Testing.ROA.Util.layered_domain import buildLayeredDomain, layeredInit, layeredTargets, layeredDisjuncts, enumerateStates
 
 
 FIELDS = ["axis", "chain_depth", "branch_depth", "n_branches", "reversible",
@@ -32,7 +30,7 @@ FIELDS = ["axis", "chain_depth", "branch_depth", "n_branches", "reversible",
           "both", "unified_only", "dnf_only", "neither",
           "u_false_success", "d_false_success"]
 
-CAP = 100
+CAP = 200
 REVERSIBLE = False      # False for the scaling claim, True for disturbance reuse
 OUT = "depth_roa.csv"
 

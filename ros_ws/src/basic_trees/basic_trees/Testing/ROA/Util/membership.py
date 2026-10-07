@@ -4,7 +4,7 @@ in the states_pool that return SUCCESS from fully expanded trees
 '''
 import py_trees
 from collections import Counter
-from basic_trees.Goals.goal_types import OR, AND, GoalSelector
+from basic_trees.Goals.goal_types import OR, AND, GoalSelector, goalSatisfied
 from basic_trees.Goals.goal_tree import setupWorld
 from basic_trees.Conditions.condition import Condition
 from basic_trees.Actions.test_action import TestAction

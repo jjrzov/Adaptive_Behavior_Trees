@@ -34,6 +34,29 @@ def yLiteral(branch, j):
     return "y_start" if j == 0 else f"y{branch}_{j}"
 
 
+def enumerateStates(init_state, action_db, cap=5000):
+    # Exact reachable universe: no sampling, so the ROA denominator is exact
+    start = frozenset(init_state)
+    seen = {start}
+    frontier = [start]
+
+    actions = [(set(a["pre"]), set(a["add"]), set(a["del"])) for a in action_db.values()]
+
+    while frontier and len(seen) < cap:
+        state = frontier.pop(0)
+
+        for pre, add, dele in actions:
+            if not pre <= state:
+                continue
+
+            nxt = frozenset((state - dele) | add)
+            if nxt not in seen:
+                seen.add(nxt)
+                frontier.append(nxt)
+
+    return seen
+
+
 def buildLayeredDomain(chain_depth=3, branch_depth=2, n_branches=2,
                        coupling_p=0.0, reversible=True, rng=None, cost=1.0,
                        x_reversible=None, y_reversible=None, gate=False,
