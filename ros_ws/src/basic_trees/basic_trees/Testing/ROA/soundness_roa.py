@@ -29,34 +29,51 @@ numbers unreadable:
     unified, whose ROA contains states it does not actually solve.
   - a goal whose conjunction is satisfiable in no reachable state is dropped,
     otherwise FAILURE everywhere is scored as lost completeness.
+
+Usage:
+    python soundness_roa.py --mode nested --checks shared --target 1000
 '''
+
+import argparse
 import csv
+import math
 import random
 import statistics
 
 import py_trees
 
 import basic_trees.algorithms as alg
-from basic_trees.Goals.goal_types import AND, OR, GoalSelector
+from basic_trees.Goals.goal_types import AND, OR
 from basic_trees.Goals.goal_tree import fixpointBuilder
-from basic_trees.Testing.setup_tests import (generateLiterals, generateSolution,
-                                             getDisjunctSetsWithCosts,
-                                             getRandomSubset)
-from basic_trees.Testing.ROA.Util.membership import (
-    sweepArms, treeStats, conflictStats, solvableDisjuncts,
-    MEM_SUCCESS, MEM_FAILURE, MEM_CYCLE, MEM_CAP, MEM_VIOLATION)
-from basic_trees.Testing.ROA.Util.nav_domain import (buildNavDomain,
-                                                     enumerateStates,
-                                                     DEFAULT_ROOMS)
+from basic_trees.Testing.setup_tests import generateLiterals, generateSolution, getRandomSubset, unweightedDistToSubset, MAX_HOP_GAP
+from basic_trees.Testing.ROA.Util.membership import (sweepArms, treeStats, conflictStats, solvableDisjuncts, solvableStates,
+                                                    MEM_SUCCESS, MEM_FAILURE, MEM_CYCLE, MEM_CAP, MEM_VIOLATION)
 
 
-DOMAIN = "synthetic"        # "synthetic" | "nav"
 MODE = "nested"             # "nested" | "deep"
-TARGET_RUNS = 50
+TARGET_PROBLEMS = 1000      # Admissible problems to keep
+MAX_ATTEMPTS = 50           # Per kept problem, so a strict filter cannot loop forever
+GOAL_ATTEMPTS = 50          # Goal draws per generated pool before the pool is discarded
 CAP = 100
 SEED = 0
 
 CASE = {"literals": 10, "distance": 10, "iterations": 10}
+
+# Admissibility checks on a drawn goal, applied per goal shape:
+#   init     no disjunct already holds in the initial state
+#   subsume  neither operand of any OR contains the other, so every OR offers
+#            a genuine alternative
+#   hop_gap  every disjunct is reachable along the generated path, and their
+#            hop distances from the initial state differ by at most MAX_HOP_GAP
+CHECK_PRESETS = {
+    # The same full set for both shapes
+    "full":   {"nested": {"init", "subsume", "hop_gap"},
+                 "deep":   {"init", "subsume", "hop_gap"}},
+    # Only the check that changes what the goal means. init and hop_gap concern
+    # the initial state, which neither the fixpoint tree nor pool scoring uses.
+    "minimal":  {"nested": {"subsume"}, "deep": {"subsume"}},
+}
+CHECK_PRESET = "minimal"
 
 # name -> protect_mode. The reference arm is added separately.
 ARMS = {"unified": "off", "protect_l": "left", "protect_s": "symmetric"}
@@ -65,130 +82,138 @@ REFERENCE = "dnf"
 # Drop problems where some disjunct is satisfiable in no reachable state
 REQUIRE_ALL_SOLVABLE = True
 
-NAV_START = {"at_B"}
-INTERFERE_PS = [0.0, 0.2, 0.4, 0.6, 0.8, 1.0]
-
 FIELDS = ["problem_id", "arm", "protect_mode", "pool_size",
           "nodes", "ref_nodes", "node_ratio",
           "expansions", "ref_expansions", "expansion_ratio", "filtered",
           "solved", "both", "arm_only", "ref_only", "neither",
           "failure", "cycle", "cap", "violations", "false_success",
           "ref_violations", "ref_false_success",
+          "ref_violations", "ref_false_success", "ref_failure", "ref_cycle",
+          "solvable",
           "shared", "r1", "r2", "n_disjuncts", "n_solvable",
           "db_actions", "db_conflict", "mean_del",
-          "branch_actions", "branch_conflict", "interfere_p"]
+          "branch_actions", "branch_conflict"]
 
 
-def buildNestedGoal(d1, d2):
-    # AND(shared, OR(r1, r2)). Factoring the shared literals out is what makes
-    # the unified arm expand them once, and is also what creates the sibling
-    # the OR branch can break.
-    shared = set(d1) & set(d2)
-    r1 = set(d1) - shared
-    r2 = set(d2) - shared
+def drawNestedGoal(states_db):
+    # AND(shared, OR(r1, r2)) from two path states. Factoring the shared
+    # literals out is what makes the unified arm expand them once, and is also
+    # what creates the sibling the OR branch can break.
+    s1 = set(random.choice(states_db))
+    s2 = set(random.choice(states_db))
+
+    if s1 == s2:
+        return None
+
+    d1, d2 = getRandomSubset(s1), getRandomSubset(s2)
+
+    shared = d1 & d2
+    r1, r2 = d1 - shared, d2 - shared
 
     if not shared or not r1 or not r2:
-        return None         # nothing shared, or one disjunct subsumes the other
+        return None         # nothing to factor, or one OR operand is empty
 
-    goal_term = AND(*sorted(shared),
-                    OR(AND(*sorted(r1)), AND(*sorted(r2))))
+    return {
+        "goal": AND(*sorted(shared), OR(AND(*sorted(r1)), AND(*sorted(r2)))),
+        "shared": shared,
+        "operands": [(r1, r2)],
+        "disjuncts": [d1, d2],
+        "r1": r1, "r2": r2,
+    }
 
-    return goal_term, shared, r1, r2, [d1, d2]
+
+def drawDeepGoal(states_db):
+    # AND(shared, OR(A1, A2), OR(B1, B2)). DNF must enumerate four disjuncts.
+    s1 = set(random.choice(states_db))
+    s2 = set(random.choice(states_db))
+
+    if s1 == s2:
+        return None
+
+    shared = getRandomSubset(s1 & s2)
+    if not shared:
+        return None
+
+    d1 = getRandomSubset(s1) - shared
+    d2 = getRandomSubset(s2) - shared
+    if len(d1) < 2 or len(d2) < 2:
+        return None
+
+    l1, l2 = sorted(d1), sorted(d2)
+    random.shuffle(l1)
+    random.shuffle(l2)
+
+    c1, c2 = len(l1) // 2, len(l2) // 2
+    A1, B1 = set(l1[:c1]), set(l1[c1:])
+    A2, B2 = set(l2[:c2]), set(l2[c2:])
+
+    if not (A1 and B1 and A2 and B2):
+        return None
+
+    return {
+        "goal": AND(*sorted(shared),
+                    OR(AND(*sorted(A1)), AND(*sorted(A2))),
+                    OR(AND(*sorted(B1)), AND(*sorted(B2)))),
+        "shared": shared,
+        "operands": [(A1, A2), (B1, B2)],
+        "disjuncts": [shared | X | Y for X in (A1, A2) for Y in (B1, B2)],
+        "r1": A1 | A2, "r2": B1 | B2,
+    }
 
 
-def buildDeepGoal(states_db):
-    # AND(shared, OR(A1, A2), OR(B1, B2)) - DNF must enumerate four disjuncts
-    for _ in range(50):
-        s1 = set(random.choice(states_db))
-        s2 = set(random.choice(states_db))
+def admissible(built, states_db, action_db, checks):
+    # Apply the configured checks to a drawn goal
+    init_state = set(states_db[0])
 
-        if s1 == s2:
-            continue
+    if "init" in checks and any(set(d) <= init_state for d in built["disjuncts"]):
+        return False
 
-        shared = getRandomSubset(s1 & s2)
-        if not shared:
-            continue
+    if "subsume" in checks and any(a <= b or b <= a for a, b in built["operands"]):
+        return False
 
-        d1 = getRandomSubset(s1) - shared
-        d2 = getRandomSubset(s2) - shared
-        if len(d1) < 2 or len(d2) < 2:
-            continue
+    if "hop_gap" in checks:
+        hops = [unweightedDistToSubset(states_db, action_db, set(d))
+                for d in built["disjuncts"]]
 
-        l1, l2 = sorted(d1), sorted(d2)
-        random.shuffle(l1)
-        random.shuffle(l2)
+        # An infinite distance means the disjunct is not reachable along the
+        # path, and inf - inf is nan, so it has to be rejected explicitly
+        if any(math.isinf(h) for h in hops) or max(hops) - min(hops) > MAX_HOP_GAP:
+            return False
 
-        c1, c2 = len(l1) // 2, len(l2) // 2
-        A1, B1 = set(l1[:c1]), set(l1[c1:])
-        A2, B2 = set(l2[:c2]), set(l2[c2:])
+    return True
 
-        if not (A1 and B1 and A2 and B2):
-            continue
 
-        goal_term = AND(*sorted(shared),
-                        OR(AND(*sorted(A1)), AND(*sorted(A2))),
-                        OR(AND(*sorted(B1)), AND(*sorted(B2))))
+def sampleGoal(states_db, action_db, mode, checks):
+    draw = drawDeepGoal if mode == "deep" else drawNestedGoal
 
-        disjuncts = [shared | X | Y for X in (A1, A2) for Y in (B1, B2)]
+    for _ in range(GOAL_ATTEMPTS):
+        built = draw(states_db)
 
-        return goal_term, shared, A1 | A2, B1 | B2, disjuncts
+        if built is not None and admissible(built, states_db, action_db, checks):
+            return built
 
     return None
 
 
-def syntheticProblem():
+def syntheticProblem(checks):
     all_literals = generateLiterals(CASE["literals"])
     states_db, action_db, states_pool = generateSolution(
         all_literals, CASE["distance"], CASE["iterations"], return_pool=True)
 
-    if MODE == "deep":
-        built = buildDeepGoal(states_db)
-    else:
-        sample = getDisjunctSetsWithCosts(states_db, action_db)
-        if sample is None:
-            return None
-        d1, d2, _, _ = sample
-        built = buildNestedGoal(d1, d2)
+    built = sampleGoal(states_db, action_db, MODE, checks)
 
     if built is None:
         return None
 
-    goal_term, shared, r1, r2, disjuncts = built
     pool = {frozenset(s) for s in states_pool}   # states_pool holds repeats
 
-    return goal_term, shared, r1, r2, disjuncts, action_db, pool, 0.0
-
-
-def navProblem(p_index):
-    interfere_p = INTERFERE_PS[p_index % len(INTERFERE_PS)]
-    rng = random.Random(p_index)
-
-    key_room, box_room, drop_room = rng.sample(DEFAULT_ROOMS, 3)
-    action_db = buildNavDomain(key_room=key_room, box_room=box_room,
-                               drop_room=drop_room, interfere_p=interfere_p,
-                               rng=rng)
-    pool = enumerateStates(NAV_START, action_db)
-
-    shared = {"has_key"}
-
-    if MODE == "deep":
-        # The second OR must be over flags - room literals are mutually exclusive
-        goal_term = AND("has_key",
-                        OR(AND("at_A"), AND("at_C")),
-                        OR(AND("has_box"), AND("box_delivered")))
-        r1, r2 = {"at_A", "at_C"}, {"has_box", "box_delivered"}
-        disjuncts = [shared | {x} | {y} for x in sorted(r1) for y in sorted(r2)]
-    else:
-        goal_term = AND("has_key", OR(AND("at_A"), AND("at_C")))
-        r1, r2 = {"at_A"}, {"at_C"}
-        disjuncts = [shared | r1, shared | r2]
-
-    return goal_term, shared, r1, r2, disjuncts, action_db, pool, interfere_p
+    return (built["goal"], built["shared"], built["r1"], built["r2"],
+            built["disjuncts"], action_db, pool)
 
 
 def buildReference(disjuncts, action_db):
     # DNF: each disjunct regressed jointly in its own tree, never protected.
-    # Joined under a fallback only so the sweep has one root to tick.
+    # Joined under a plain fallback only so the sweep has one root to tick.
     roots, expansions = [], 0
 
     for disjunct in disjuncts:
@@ -197,7 +222,7 @@ def buildReference(disjuncts, action_db):
         roots.append(root)
         expansions += count
 
-    join = GoalSelector(name="DNF", memory=False)
+    join = py_trees.composites.Selector(name="DNF", memory=False)
     join.add_children(roots)
 
     return join, expansions
@@ -224,13 +249,13 @@ def buildArms(goal_term, disjuncts, action_db):
     return roots, expansions, filtered
 
 
-def runProblem(p_index, blackboard):
-    problem = navProblem(p_index) if DOMAIN == "nav" else syntheticProblem()
+def runProblem(p_index, blackboard, checks):
+    problem = syntheticProblem(checks)
 
     if problem is None:
-        return None, "ungeneratable"
+        return None, "no_admissible_goal"
 
-    goal_term, shared, r1, r2, disjuncts, action_db, pool, interfere_p = problem
+    goal_term, shared, r1, r2, disjuncts, action_db, pool = problem
 
     n_solvable, n_disjuncts = solvableDisjuncts(disjuncts, pool, action_db)
 
@@ -243,6 +268,13 @@ def runProblem(p_index, blackboard):
 
     outcomes, false_success, solved, buckets = sweepArms(
         pool, roots, goal_term, blackboard, reference=REFERENCE, cap=CAP)
+
+    # States from which the goal is reachable at all
+    solvable = solvableStates(pool, goal_term, action_db)
+
+    for name, members in solved.items():
+        if members - solvable:
+            raise AssertionError(f"{name} is a member on {len(members - solvable)} "f"states from which the goal is unreachable")
 
     stats = {name: treeStats(root) for name, root in roots.items()}
     ref_nodes = stats[REFERENCE]["nodes"]
@@ -279,13 +311,15 @@ def runProblem(p_index, blackboard):
             "false_success": false_success[name],
             "ref_violations": outcomes[REFERENCE][MEM_VIOLATION],
             "ref_false_success": false_success[REFERENCE],
+            "ref_failure": outcomes[REFERENCE][MEM_FAILURE],
+            "ref_cycle": outcomes[REFERENCE][MEM_CYCLE],
+            "solvable": len(solvable),
             "shared": len(shared),
             "r1": len(r1),
             "r2": len(r2),
             "n_disjuncts": n_disjuncts,
             "n_solvable": n_solvable,
             **conflicts,
-            "interfere_p": interfere_p,
         })
 
     return rows, None
@@ -337,33 +371,52 @@ def summarise(rows):
 
 
 def main():
+    global MODE, CHECK_PRESET, TARGET_PROBLEMS, SEED
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--mode", default=MODE, choices=["nested", "deep"])
+    parser.add_argument("--checks", default=CHECK_PRESET, choices=list(CHECK_PRESETS))
+    parser.add_argument("--target", type=int, default=TARGET_PROBLEMS)
+    parser.add_argument("--seed", type=int, default=SEED)
+    args = parser.parse_args()
+
+    MODE, CHECK_PRESET = args.mode, args.checks
+    TARGET_PROBLEMS, SEED = args.target, args.seed
+    checks = CHECK_PRESETS[CHECK_PRESET][MODE]
+
     random.seed(SEED)
 
     alg.SUBSET_PRUNE = True
     alg.DEDUP_C_ATTR = False
 
     blackboard = py_trees.blackboard.Client(name="ROA")
-    out_path = f"soundness_{DOMAIN}_{MODE}.csv"
+    out_path = f"soundness_{MODE}_{CHECK_PRESET}.csv"
 
     rows = []
-    skipped = {"ungeneratable": 0, "unsatisfiable": 0}
+    kept = 0
+    attempts = 0
+    skipped = {"no_admissible_goal": 0, "unsatisfiable": 0}
 
-    for p_index in range(TARGET_RUNS):
-        problem_rows, reason = runProblem(p_index, blackboard)
+    # Draw until the target is reached, so the sample size is fixed
+    while kept < TARGET_PROBLEMS and attempts < MAX_ATTEMPTS * TARGET_PROBLEMS:
+        problem_rows, reason = runProblem(attempts, blackboard, checks)
+        attempts += 1
 
         if problem_rows is None:
             skipped[reason] += 1
             continue
 
         rows.extend(problem_rows)
+        kept += 1
 
-    problems = len({r["problem_id"] for r in rows})
     pooled = sum(r["pool_size"] for r in rows if r["arm"] == list(ARMS)[0])
 
-    print(f"domain {DOMAIN}  mode {MODE}  seed {SEED}")
-    print(f"problems  : {problems} kept of {TARGET_RUNS} "
-          f"({skipped['ungeneratable']} ungeneratable, "
+    print(f"mode {MODE}  checks {CHECK_PRESET} {sorted(checks)}  seed {SEED}")
+    print(f"problems  : {kept} kept of {attempts} attempts "
+          f"({skipped['no_admissible_goal']} no admissible goal, "
           f"{skipped['unsatisfiable']} unsatisfiable)")
+    if kept < TARGET_PROBLEMS:
+        print(f"  ** stopped at the attempt limit before reaching {TARGET_PROBLEMS} **")
     print(f"pooled    : {pooled} states")
 
     if rows:

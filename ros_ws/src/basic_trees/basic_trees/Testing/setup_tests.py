@@ -13,6 +13,11 @@ COST_MIN = 1.0  # Min bound for cost of an action
 COST_MAX = 1000.0 # Max bound for cost of an action
 MAX_HOP_GAP = 2
 
+# Every action costs 1.0 unless this is False. The ROA experiments never read
+# cost, and sampling one would only consume random draws. Set False for
+# traversal comparisons (CheapestFirst vs BFS), which need non-unit costs.
+UNIFORM_COSTS = True
+
 def generateAction(literals, state):
     # Generate a random action using the world state and all literals
     pre, add, dels = set(), set(), set()
@@ -31,8 +36,10 @@ def generateAction(literals, state):
                 if random.random() > 0.5:
                     dels.add(literal)
 
-    # cost = random.uniform(COST_MIN, COST_MAX)   # Randomly sample the cost with a UNIFORM distribution
-    cost = math.exp(random.uniform(math.log(COST_MIN), math.log(COST_MAX))) # Log Uniform distribution
+    if UNIFORM_COSTS:
+        cost = 1.0      # No random draw, so the generator's stream is unaffected
+    else:
+        cost = math.exp(random.uniform(math.log(COST_MIN), math.log(COST_MAX))) # Log Uniform distribution
 
     return {"pre": pre, "add": add, "del": dels, "cost": cost}
 
@@ -111,7 +118,8 @@ def printTestSet(all_literals, states_database, action_database):
 def getRandomSubset(state):
     subset = set()
 
-    for literal in state:
+    for literal in sorted(state):
+        # Needs to be sorted to let every draw land on the same literal across test runs
         if random.random() > 0.25:
             subset.add(literal)
 

@@ -16,18 +16,6 @@ MEM_CAP = 3
 MEM_VIOLATION = 4
 
 
-# def goalSatisfied(term, state):
-#     # Recursively evaluate state of the tree
-#     # Works for nested or flat AND/OR terms
-#     if isinstance(term, str):
-#         return term in state
-#     elif isinstance(term, AND):
-#         return all(goalSatisfied(child, state) for child in term.children)
-#     else:
-#         # term is an OR
-#         return any(goalSatisfied(child, state) for child in term.children)
-
-
 def assertMemoryless(root):
     # Walk through the tree and set all Composite nodes to memoryless
     for node in root.iterate():
@@ -210,40 +198,73 @@ def conflictStats(u_root, shared, action_db):
     }
 
 
-def disjunctSolvable(disjunct, pool, action_db, cap=200):
-    # Forward BFS from each pooled state; intermediate states may leave the pool
-    target = set(disjunct)
+def reachableStates(pool, action_db):
+    # Every state reachable from any pooled state, by exhaustive forward search.
+    # Intermediate states may leave the pool. The search is uncapped, which is
+    # safe because the state space is at most 2^literals (1024 at 10 literals).
     actions = [(set(a["pre"]), set(a["add"]), set(a["del"])) for a in action_db.values()]
 
-    for start in pool:
-        if target <= start:
-            return True
+    seen = {frozenset(s) for s in pool}
+    frontier = list(seen)
 
-        seen = {start}
-        frontier = [start]
-        expanded = 0
+    while frontier:
+        state = frontier.pop()
 
-        while frontier and expanded < cap:
-            state = frontier.pop(0)
-            expanded += 1
-
-            for pre, add, dele in actions:
-                if not pre <= state:
-                    continue
-                nxt = frozenset((state - dele) | add)
-                if nxt in seen:
-                    continue
-                if target <= nxt:
-                    return True
+        for pre, add, dele in actions:
+            if not pre <= state:
+                continue
+            nxt = frozenset((state - dele) | add)
+            if nxt not in seen:
                 seen.add(nxt)
                 frontier.append(nxt)
 
+    return seen
+
+
+def disjunctSolvable(disjunct, pool, action_db, reachable=None):
+    # A disjunct is solvable if some state reachable from the pool satisfies it
+    if reachable is None:
+        reachable = reachableStates(pool, action_db)
+
+    target = set(disjunct)
+    return any(target <= state for state in reachable)
+
+
+def goalReachable(start, goal_term, actions):
+    # Exhaustive forward search from one state. True if any plan reaches a
+    # state satisfying the goal, which is what makes the state solvable.
+    seen = {frozenset(start)}
+    frontier = list(seen)
+ 
+    while frontier:
+        state = frontier.pop()
+ 
+        if goalSatisfied(goal_term, state):
+            return True
+ 
+        for pre, add, dele in actions:
+            if not pre <= state:
+                continue
+            nxt = frozenset((state - dele) | add)
+            if nxt not in seen:
+                seen.add(nxt)
+                frontier.append(nxt)
+ 
     return False
+ 
+ 
+def solvableStates(pool, goal_term, action_db):
+    # The pooled states from which the goal is reachable under any plan. This
+    # is the absolute denominator for coverage, independent of any tree.
+    actions = [(set(a["pre"]), set(a["add"]), set(a["del"])) for a in action_db.values()]
+    return {state for state in pool if goalReachable(state, goal_term, actions)}
 
 
 def solvableDisjuncts(disjuncts, pool, action_db):
-    # How many of the DNF arm's disjuncts are reachable at all
-    flags = [disjunctSolvable(d, pool, action_db) for d in disjuncts]
+    # How many of the DNF arm's disjuncts are reachable at all. One search
+    # serves every disjunct, since reachability does not depend on the target.
+    reachable = reachableStates(pool, action_db)
+    flags = [disjunctSolvable(d, pool, action_db, reachable) for d in disjuncts]
     return sum(flags), len(flags)
 
 def sweepArms(pool, arms, goal_term, blackboard, reference, cap=100):
