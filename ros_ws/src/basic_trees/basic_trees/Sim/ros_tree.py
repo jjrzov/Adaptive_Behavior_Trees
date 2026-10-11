@@ -199,9 +199,9 @@ def main(args=None):
     rclpy.init(args=args)
 
     pose_map = {
-        "A": {"goal": (0.0, 4.5, 1.0),  "bounds": ((-3.25, 3.25), (0.75, 8.25)),   "literal": "at_A"}, # Red block room
-        "B": {"goal": (9.0, 0.0, 1.0),  "bounds": ((4.75, 13.25), (-8.25, 8.25)),  "literal": "at_B"}, # Hub, robot spawns here
-        "C": {"goal": (0.0, -4.5, 1.0), "bounds": ((-3.25, 3.25), (-8.25, -0.75)), "literal": "at_C"}, # Blue block room
+        "A": {"goal": (0.0,  4.5, 1.0), "bounds": ((-3.25, 3.25), (0.75, 8.25)),   "literal": "at_A"},
+        "B": {"goal": (9.0, -3.0, 1.0), "bounds": ((4.75, 13.25), (-8.25, 8.25)),  "literal": "at_B"},  # hub
+        "C": {"goal": (0.0, -4.5, 1.0), "bounds": ((-3.25, 3.25), (-8.25, -0.75)), "literal": "at_C"},
     }
 
     # Warehouse task: scan the package, then leave it in bin A or bin C.
@@ -212,13 +212,13 @@ def main(args=None):
     # Move costs are measured by CostMapping at startup. The costs listed here
     # are used by scan, load and unload, which have no path to measure.
     action_database = {
-        "scan"    : {"pre": ["at_B"],          "add": ["scanned"],       "del": [],               "cost": 2.0},
-        "load"    : {"pre": ["empty", "at_B"], "add": ["full"],          "del": ["empty"],        "cost": 2.0},
-        "unload_A": {"pre": ["full", "at_A"],  "add": ["box_at_A", "empty"], "del": ["full"],         "cost": 2.0},
-        "unload_C": {"pre": ["full", "at_C"],  "add": ["box_at_C", "empty"], "del": ["full"],         "cost": 2.0},
-        "move_A"  : {"pre": [],                "add": ["at_A"],          "del": ["at_B", "at_C"], "cost": 1.0},
-        "move_B"  : {"pre": [],                "add": ["at_B"],          "del": ["at_A", "at_C"], "cost": 1.0},
-        "move_C"  : {"pre": [],                "add": ["at_C"],          "del": ["at_A", "at_B"], "cost": 1.0},
+        "scan"    : {"pre": ["at_B"],          "add": ["scanned"],              "del": [],               "cost": 2.0},
+        "load"    : {"pre": ["empty", "at_B"], "add": ["full"],                 "del": ["empty"],        "cost": 2.0},
+        "unload_A": {"pre": ["full", "at_A"],  "add": ["box_at_A", "empty"],    "del": ["full"],         "cost": 2.0},
+        "unload_C": {"pre": ["full", "at_C"],  "add": ["box_at_C", "empty"],    "del": ["full"],         "cost": 2.0},
+        "move_A"  : {"pre": [],                "add": ["at_A"],                 "del": ["at_B", "at_C"], "cost": 1.0},
+        "move_B"  : {"pre": [],                "add": ["at_B"],                 "del": ["at_A", "at_C"], "cost": 1.0},
+        "move_C"  : {"pre": [],                "add": ["at_C"],                 "del": ["at_A", "at_B"], "cost": 1.0},
     }
 
     try:

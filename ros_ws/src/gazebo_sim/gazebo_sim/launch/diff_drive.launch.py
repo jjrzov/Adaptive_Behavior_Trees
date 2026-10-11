@@ -106,8 +106,8 @@ def generate_launch_description():
         robot_state_publisher,
         rviz,
 
-        DeclareLaunchArgument('x_pose', default_value='10.0'),
-        DeclareLaunchArgument('y_pose', default_value='0.0'),
+        DeclareLaunchArgument('x_pose', default_value='9.0'),
+        DeclareLaunchArgument('y_pose', default_value='-3.0'),
         DeclareLaunchArgument('yaw', default_value='0.0'),
         spawn,
     ])

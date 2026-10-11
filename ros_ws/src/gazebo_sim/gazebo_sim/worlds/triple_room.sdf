@@ -61,9 +61,9 @@
         X: -4 to +14  (total 18m wide)
         Y: -9 to +9   (total 18m tall)
 
-      Room 1: x=-4 to x=4,  y=0  to y=9   (8x9m, top-left)
-      Room 2: x=-4 to x=4,  y=-9 to y=0   (8x9m, bottom-left)
-      Room 3: x=4  to x=14, y=-9 to y=9   (10x18m, full-height right)
+      Room A: x=-4 to x=4,  y=0  to y=9   (8x9m, top-left)
+      Room C: x=-4 to x=4,  y=-9 to y=0   (8x9m, bottom-left)
+      Room B: x=4  to x=14, y=-9 to y=9   (10x18m, hub, full-height right)
 
       Single set of shared walls:
         Perimeter: north(y=9), south(y=-9), west(x=-4), east(x=14)

@@ -105,6 +105,9 @@ class CostMapping():
             self.edges[(a, b)] = length
             self.edges[(b, a)] = length      # symmetric
 
+        for (a, b), length in self.edges.items():
+            self.node.get_logger().info(f"cost {a} -> {b}: {length:.2f} m")
+
 
     def getRoomCost(self, current, dest):
         # Return the cost from the current room to the destination room
