@@ -1,147 +1,151 @@
 '''
-Pruning scope vs region of attraction.
+Expansion scope vs region of attraction.
 
-prune_driver.py answers "how many nodes does each pruning policy remove", and
-reports a solved column taken from one initial state per problem. That is too
-coarse to see a completeness difference: sweeping every pooled state instead of
-just states_db[0] finds one immediately.
+The unified construction scopes its expansion record and its pruning to the
+GoalSelector branch a condition sits in. The algorithm of Cai et al. (2021)
+keeps one global record and prunes across the whole tree, which is the same
+thing for a single-condition goal but not for a goal with branches. This file
+measures what that choice costs and buys, on the same problems as the
+soundness sweep:
 
-This file asks the other question. For each problem it builds four unified arms
-on the SAME action database and goal:
+    scoped_off    scopedBFS + scopedPrune, protect off
+    global_off    BFS + prune (one shared record), protect off
+    scoped_left   scopedBFS + scopedPrune, protect left   (the construction)
+    global_left   BFS + prune (one shared record), protect left
+    blind_left    global_left with a record key that ignores the protect set
+    dnf_shared    DNF with one record shared across its sub-goal trees
+    dnf           DNF with the record reset per sub-goal  (the reference)
 
-    scoped_off    scopedBFS + scopedPrune,  protect off     (current default)
-    global_off    BFS + prune,              protect off     (cross-branch)
-    scoped_left   scopedBFS + scopedPrune,  protect left
-    global_left   BFS + prune,              protect left
+blind_left tests why protection makes the global rule safe. A condition's
+record key is its literals together with its protect set, so under left
+protection conditions in different GoalSequence siblings never share a key.
+Dropping the protect set from the key, while protection still filters actions,
+shows whether the key or the filtering is what keeps the global rule complete.
 
-and scores all four against a DNF reference built from the same disjuncts. DNF
-is sound and complete by construction, so "states lost vs DNF" is the
-completeness cost of each arm.
+dnf_shared answers whether the saving a shared record gives is specific to
+the unified construction. It is built as the flat goal OR(d1, ..., dk), which
+for a flat goal is the DNF tree itself, expanded with the global loop.
 
-Both values of SUBSET_PRUNE are swept, since the two pruning regimes fire on
-different conditions - exact match against subset match - and it is not obvious
-in advance that they behave the same way.
+Problems are drawn through soundness_roa.syntheticProblem with the same seed
+and the same skip rules, so for nested and deep goals they are the problems of
+the soundness sweep, and scoped_off and scoped_left reproduce its unified and
+protect_l arms exactly. --mode flat replaces each nested goal by the
+disjunction of its two disjuncts, where protection has nothing to act on.
 
-PREREQUISITES - the script checks for these and warns:
-
-  1. algorithms.scopedPrune must unpack the expansion key as
-         fc, fc_protect = key_pair
-     and not wrap it in frozenset(), which silently disables scoped pruning.
-  2. goal_types.buildBaseTree must pass mode through its recursion:
-         root.add_child(buildBaseTree(item, mode=mode))
-  3. setup_tests.getRandomSubset must iterate sorted(state), not state.
-     Set iteration order is randomised per process, so without this the
-     generated problems differ between runs and the numbers do not reproduce.
-  4. Testing/ROA/Util/membership.py must provide sweepArms.
+Usage:
+    python pruning_scope_roa.py --mode nested --checks minimal --target 1000
 '''
+import argparse
 import csv
-import inspect
-import sys
+import math
+import random
+import statistics
 
 import py_trees
 
 import basic_trees.algorithms as alg
-from basic_trees.algorithms import expand, prune, expansionKey
-from basic_trees.traverse import BFS
-from basic_trees.Goals.goal_types import AND, OR, GoalSelector, buildBaseTree
+from basic_trees.algorithms import expand, expansionKey
+from basic_trees.Conditions.condition import Condition
+from basic_trees.Goals.goal_types import AND, OR, buildBaseTree
 from basic_trees.Goals.goal_tree import fixpointBuilder, getAction
-from basic_trees.Testing import setup_tests
-from basic_trees.Testing.setup_tests import (generateLiterals, generateSolution,
-                                             getDisjunctSetsWithCosts)
-from basic_trees.Testing.ROA.Util.membership import (sweepArms, treeStats,
-                                                     solvableDisjuncts)
-
-import random
+import basic_trees.Testing.ROA.soundness_roa as sr
+from basic_trees.Testing.ROA.Util.membership import (
+    sweepArms, treeStats, solvableDisjuncts, solvableStates,
+    MEM_FAILURE, MEM_CYCLE, MEM_CAP, MEM_VIOLATION)
 
 
-TARGET_RUNS = 500
+MODE = "nested"             # "nested" | "deep" | "flat"
+CHECK_PRESET = "minimal"    # A preset of soundness_roa.CHECK_PRESETS
+TARGET_PROBLEMS = 1000
+MAX_ATTEMPTS = 50           # Per kept problem
 CAP = 100
 SEED = 0
-CASE = {"literals": 10, "distance": 10, "iterations": 10}
-SUBSET_MODES = (True, False)
-OUT = "prune_scope_roa.csv"
+GLOBAL_EXPANSION_CAP = 2000 # Guard on the global loop, which has no scoped record
 
-ARMS = ["scoped_off", "global_off", "scoped_left", "global_left"]
+ARMS = ["scoped_off", "global_off", "scoped_left", "global_left", "blind_left", "dnf_shared"]
 REFERENCE = "dnf"
 
-FIELDS = ["subset_prune", "problem_id", "pool_size", "arm", "nodes",
-          "expansions", "solved", "both", "arm_only", "ref_only", "neither",
-          "false_success", "violations"]
+FIELDS = ["problem_id", "arm", "pool_size", "solvable",
+          "nodes", "ref_nodes", "node_ratio", "expansions",
+          "solved", "both", "arm_only", "ref_only", "neither",
+          "failure", "cycle", "cap", "violations", "false_success"]
 
 
-def checkPrerequisites():
-    # Cheap source checks - each of these silently changes the numbers
-    problems = []
-
-    source = inspect.getsource(alg.scopedPrune)
-    if "frozenset(key_pair)" in source:
-        problems.append("algorithms.scopedPrune still wraps the key in "
-                        "frozenset() - scoped pruning is disabled")
-
-    source = inspect.getsource(buildBaseTree)
-    if "buildBaseTree(item, mode=mode)" not in source:
-        problems.append("goal_types.buildBaseTree does not pass mode through "
-                        "its recursion")
-
-    source = inspect.getsource(setup_tests.getRandomSubset)
-    if "sorted(state)" not in source:
-        problems.append("setup_tests.getRandomSubset iterates a set - problems "
-                        "will differ between runs and these numbers will not "
-                        "reproduce")
-
-    for line in problems:
-        print(f"  WARNING: {line}")
-
-    return not problems
+def keyIgnoringProtect(node):
+    # Record key with the protect set dropped, for the blind_left arm
+    return (frozenset(node.preconditions), frozenset())
 
 
-def globalFixpoint(goal_term, action_db, protect_mode, cap=400):
-    # The cross-branch arm: one global record of expanded literals and prune()
-    # instead of scopedPrune(), which is what PRUNE_MODE = "global" does in
-    # runTree. Conditions are shared across GoalSelector branches rather than
-    # kept per scope, so expanding one branch can sever another branch's route.
+def nextUnexpanded(root, expanded, key):
+    # Breadth-first search for a condition whose key is not yet recorded.
+    # Matches traverse.BFS, with the key as a parameter.
+    queue = [root]
+
+    while queue:
+        node = queue.pop(0)
+
+        if isinstance(node, Condition) and key(node) not in expanded:
+            return node
+
+        if isinstance(node, py_trees.composites.Composite):
+            queue.extend(node.children)
+
+    return None
+
+
+def pruneGlobal(root, expanded, key):
+    # Remove sequence structures whose condition is already covered by a
+    # recorded condition anywhere in the tree. Matches algorithms.prune, with
+    # the key as a parameter.
+    prune_nodes = []
+    queue = [root]
+
+    while queue:
+        node = queue.pop(0)
+
+        # Exact type, since GoalSequence subclasses Sequence and is never pruned
+        if type(node) is py_trees.composites.Sequence:
+            first_child = node.children[0]
+
+            if type(first_child) is Condition:
+                literals, protect = key(first_child)
+
+                if alg.SUBSET_PRUNE:
+                    pruned = any(e <= literals and e_protect == protect
+                                 for e, e_protect in expanded)
+                else:
+                    pruned = (literals, protect) in expanded
+
+                if pruned:
+                    prune_nodes.append(node)
+
+        if isinstance(node, py_trees.composites.Composite):
+            queue.extend(node.children)
+
+    for node in prune_nodes:
+        node.parent.remove_child(node)
+
+
+def globalFixpoint(goal_term, action_db, protect_mode, key=expansionKey):
+    # The inherited rule: one global record of expanded conditions and pruning
+    # across the whole tree. A condition expanded in one GoalSelector branch is
+    # treated as expanded in every branch, and its copies elsewhere stay leaves.
     root = buildBaseTree(goal_term, mode=protect_mode)
 
-    expanded_literals = set()
+    expanded = set()
     expansions = 0
-    traverse = BFS()
 
-    while (condition := traverse.getNextCondition(
-            root, expanded_literals)) is not None:
-        if expansions >= cap:
+    while (condition := nextUnexpanded(root, expanded, key)) is not None:
+        if expansions >= GLOBAL_EXPANSION_CAP:
             raise RuntimeError("global fixpoint did not terminate")
 
-        expanded_literals.add(expansionKey(condition))
+        expanded.add(key(condition))
         root = expand(root, condition, action_db, getAction)
-        prune(root, expanded_literals)
+        pruneGlobal(root, expanded, key)
 
         expansions += 1
 
     return root, expansions
-
-
-def buildProblem():
-    # Nested goal AND(shared, OR(r1, r2)) from the base paper's generator
-    literals = generateLiterals(CASE["literals"])
-    states_db, action_db, states_pool = generateSolution(
-        literals, CASE["distance"], CASE["iterations"], return_pool=True)
-
-    sample = getDisjunctSetsWithCosts(states_db, action_db)
-    if sample is None:
-        return None
-
-    d1, d2, _, _ = sample
-    shared = set(d1) & set(d2)
-    r1, r2 = set(d1) - shared, set(d2) - shared
-
-    if not shared or not r1 or not r2:
-        return None         # nothing shared, or one disjunct subsumes the other
-
-    goal_term = AND(*sorted(shared),
-                    OR(AND(*sorted(r1)), AND(*sorted(r2))))
-    pool = {frozenset(s) for s in states_pool}
-
-    return goal_term, [d1, d2], action_db, pool
 
 
 def buildArms(goal_term, disjuncts, action_db):
@@ -153,106 +157,165 @@ def buildArms(goal_term, disjuncts, action_db):
         roots[f"global_{protect_mode}"], expansions[f"global_{protect_mode}"] = \
             globalFixpoint(goal_term, action_db, protect_mode)
 
-    reference, count = [], 0
-    for disjunct in disjuncts:
-        root, expanded = fixpointBuilder(AND(*sorted(disjunct)), action_db,
-                                         protect_mode="off")
-        reference.append(root)
-        count += expanded
+    roots["blind_left"], expansions["blind_left"] =         globalFixpoint(goal_term, action_db, "left", key=keyIgnoringProtect)
 
-    join = GoalSelector(name="DNF", memory=False)
-    join.add_children(reference)
+    flat = OR(*[AND(*sorted(d)) for d in disjuncts])
+    roots["dnf_shared"], expansions["dnf_shared"] = globalFixpoint(flat, action_db, "off")
 
-    roots[REFERENCE], expansions[REFERENCE] = join, count
+    roots[REFERENCE], expansions[REFERENCE] = sr.buildReference(disjuncts, action_db)
 
     return roots, expansions
 
 
-def runSubsetMode(subset_prune, writer):
-    alg.SUBSET_PRUNE = subset_prune
-    alg.DEDUP_C_ATTR = False
+def runProblem(p_index, blackboard, checks):
+    problem = sr.syntheticProblem(checks)
 
-    random.seed(SEED)        # reseed so both regimes see identical problems
+    if problem is None:
+        return None, "no_admissible_goal"
 
-    kept = tree_diff = roa_diff = 0
-    pooled = 0
-    lost = {arm: 0 for arm in ARMS}
+    goal_term, shared, r1, r2, disjuncts, action_db, pool = problem
 
-    for problem_id in range(TARGET_RUNS):
-        problem = buildProblem()
-        if problem is None:
-            continue
+    n_solvable, n_disjuncts = solvableDisjuncts(disjuncts, pool, action_db)
+    if n_solvable < n_disjuncts:
+        return None, "unsatisfiable"
 
-        goal_term, disjuncts, action_db, pool = problem
+    if MODE == "flat":
+        # Same disjuncts, with nothing factored out, so no GoalSequence exists
+        goal_term = OR(*[AND(*sorted(d)) for d in disjuncts])
 
-        solvable, total = solvableDisjuncts(disjuncts, pool, action_db)
-        if solvable < total:
-            continue         # FAILURE everywhere would be correct here
+    roots, expansions = buildArms(goal_term, disjuncts, action_db)
 
-        kept += 1
-        pooled += len(pool)
+    outcomes, false_success, solved, buckets = sweepArms(
+        pool, roots, goal_term, blackboard, reference=REFERENCE, cap=CAP)
 
-        roots, expansions = buildArms(goal_term, disjuncts, action_db)
+    solvable = solvableStates(pool, goal_term, action_db)
+    for name, members in solved.items():
+        if members - solvable:
+            raise AssertionError(f"{name} is a member on {len(members - solvable)} "
+                                 f"states from which the goal is unreachable")
 
-        if (treeStats(roots["scoped_off"])["nodes"]
-                != treeStats(roots["global_off"])["nodes"]):
-            tree_diff += 1
+    ref_nodes = treeStats(roots[REFERENCE])["nodes"]
+    rows = []
 
-        blackboard = py_trees.blackboard.Client(
-            name=f"prune_{subset_prune}_{problem_id}")
+    for name in ARMS:
+        nodes = treeStats(roots[name])["nodes"]
+        bucket = buckets[name]
 
-        outcomes, false_success, solved, buckets = sweepArms(
-            pool, roots, goal_term, blackboard, reference=REFERENCE, cap=CAP)
+        rows.append({
+            "problem_id": p_index,
+            "arm": name,
+            "pool_size": len(pool),
+            "solvable": len(solvable),
+            "nodes": nodes,
+            "ref_nodes": ref_nodes,
+            "node_ratio": round(ref_nodes / nodes, 4),
+            "expansions": expansions[name],
+            "solved": len(solved[name]),
+            "both": bucket["both"],
+            "arm_only": bucket["arm_only"],
+            "ref_only": bucket["ref_only"],
+            "neither": bucket["neither"],
+            "failure": outcomes[name][MEM_FAILURE],
+            "cycle": outcomes[name][MEM_CYCLE],
+            "cap": outcomes[name][MEM_CAP],
+            "violations": outcomes[name][MEM_VIOLATION],
+            "false_success": false_success[name],
+        })
 
-        if (solved["scoped_off"] != solved["global_off"]
-                or solved["scoped_left"] != solved["global_left"]):
-            roa_diff += 1
+    return rows, None
 
-        for arm in ARMS:
-            lost[arm] += buckets[arm]["ref_only"]
 
-            writer.writerow({
-                "subset_prune": subset_prune,
-                "problem_id": problem_id,
-                "pool_size": len(pool),
-                "arm": arm,
-                "nodes": treeStats(roots[arm])["nodes"],
-                "expansions": expansions[arm],
-                "solved": len(solved[arm]),
-                "both": buckets[arm]["both"],
-                "arm_only": buckets[arm]["arm_only"],
-                "ref_only": buckets[arm]["ref_only"],
-                "neither": buckets[arm]["neither"],
-                "false_success": false_success[arm],
-                "violations": outcomes[arm][4],      # MEM_VIOLATION
-            })
+def summarise(rows):
+    print(f"\n{'arm':>12} {'solvable solved':>16} {'node ratio':>11} "
+          f"{'viol':>6} {'false_s':>8} {'arm_only':>9}")
 
-    return kept, pooled, tree_diff, roa_diff, lost
+    for name in ARMS:
+        arm_rows = [r for r in rows if r["arm"] == name]
+
+        solved = sum(r["solved"] for r in arm_rows)
+        solvable = sum(r["solvable"] for r in arm_rows)
+        geo_mean = math.exp(statistics.mean(math.log(r["node_ratio"]) for r in arm_rows))
+
+        print(f"{name:>12} {solved / solvable:>15.1%} {geo_mean:>11.2f} "
+              f"{sum(r['violations'] for r in arm_rows):>6} "
+              f"{sum(r['false_success'] for r in arm_rows):>8} "
+              f"{sum(r['arm_only'] for r in arm_rows):>9}")
+
+    print("\n  node ratio = geometric mean of DNF / arm, so above 1 means the arm is smaller")
+
+    # Where scoping changes the region, per protection mode
+    by_problem = {}
+    for r in rows:
+        by_problem.setdefault(r["problem_id"], {})[r["arm"]] = r
+
+    for mode in ("off", "left"):
+        differ = sum(1 for p in by_problem.values()
+                     if p[f"scoped_{mode}"]["ref_only"] != p[f"global_{mode}"]["ref_only"]
+                     or p[f"scoped_{mode}"]["solved"] != p[f"global_{mode}"]["solved"])
+        print(f"  protect {mode:>4}: scoped and global solve different state counts "
+              f"on {differ}/{len(by_problem)} problems")
 
 
 def main():
-    print("prune scope vs ROA\n")
+    global MODE, CHECK_PRESET, TARGET_PROBLEMS, SEED
 
-    if not checkPrerequisites():
-        print()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--mode", default=MODE, choices=["nested", "deep", "flat"])
+    parser.add_argument("--checks", default=CHECK_PRESET, choices=list(sr.CHECK_PRESETS))
+    parser.add_argument("--target", type=int, default=TARGET_PROBLEMS)
+    parser.add_argument("--seed", type=int, default=SEED)
+    parser.add_argument("--exact", action="store_true",
+                        help="prune on exact match only, as published, instead of subset")
+    args = parser.parse_args()
 
-    with open(OUT, "w", newline="") as handle:
+    MODE, CHECK_PRESET = args.mode, args.checks
+    TARGET_PROBLEMS, SEED = args.target, args.seed
+
+    # Flat goals are drawn as nested goals and then flattened, so they share
+    # the nested problems and the nested checks
+    sr.MODE = "deep" if MODE == "deep" else "nested"
+    checks = sr.CHECK_PRESETS[CHECK_PRESET][sr.MODE]
+
+    random.seed(SEED)
+
+    alg.SUBSET_PRUNE = not args.exact
+    alg.DEDUP_C_ATTR = False
+
+    blackboard = py_trees.blackboard.Client(name="PRUNE")
+    suffix = "_exact" if args.exact else ""
+    out_path = f"pruning_{MODE}_{CHECK_PRESET}{suffix}.csv"
+
+    rows = []
+    kept = attempts = 0
+    skipped = {"no_admissible_goal": 0, "unsatisfiable": 0}
+
+    # Same loop and skip rules as the soundness sweep, so the problems match
+    while kept < TARGET_PROBLEMS and attempts < MAX_ATTEMPTS * TARGET_PROBLEMS:
+        problem_rows, reason = runProblem(attempts, blackboard, checks)
+        attempts += 1
+
+        if problem_rows is None:
+            skipped[reason] += 1
+            continue
+
+        rows.extend(problem_rows)
+        kept += 1
+
+    print(f"mode {MODE}  checks {CHECK_PRESET} {sorted(checks)}  seed {SEED}  "
+          f"pruning {'exact' if args.exact else 'subset'}")
+    print(f"problems  : {kept} kept of {attempts} attempts "
+          f"({skipped['no_admissible_goal']} no admissible goal, "
+          f"{skipped['unsatisfiable']} unsatisfiable)")
+
+    if rows:
+        summarise(rows)
+
+    with open(out_path, "w", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=FIELDS)
         writer.writeheader()
+        writer.writerows(rows)
 
-        for subset_prune in SUBSET_MODES:
-            kept, pooled, tree_diff, roa_diff, lost = runSubsetMode(
-                subset_prune, writer)
-
-            print(f"SUBSET_PRUNE={subset_prune}: {kept} problems, "
-                  f"{pooled} pooled states")
-            print(f"   trees differ (scoped vs global) : {tree_diff}/{kept}")
-            print(f"   ROA differs (scoped vs global)  : {roa_diff}/{kept}")
-            print("   states lost vs DNF: "
-                  + "  ".join(f"{arm}={lost[arm]}" for arm in ARMS))
-            print()
-
-    print(f"wrote {OUT}")
+    print(f"\nwrote {len(rows)} rows to {out_path}")
 
 
 if __name__ == '__main__':

@@ -5,17 +5,18 @@ import rclpy
 import basic_trees.algorithms as alg
 
 from basic_trees.Conditions.condition import Condition
-from basic_trees.Actions import Load, Unload, SimActionFactory, MockMoveA, MockMoveB, MockMoveC
+from basic_trees.Actions import Load, Unload, SimActionFactory, MockMoveA, MockMoveB, MockMoveC, TestAction
 from basic_trees.traverse import BFS, scopedBFS, scopedCheapestFirst
 from basic_trees.algorithms import expand, expansionKey, goalScope, scopedPrune
 from basic_trees.Goals.goal_tree import buildBaseTree
 from basic_trees.Goals.goal_types import AND, OR, goalSatisfied
 from basic_trees.Sim import PoseObserver, CostMapping
 from basic_trees.Sim.room_mapping import findStartRoom
+from basic_trees.Sim.tick_logger import TickLogger
 
 
 
-MOCK = True    # Use mock actions or real actions
+MOCK = False    # Use mock actions or real actions
 
 # "off" | "left" | "symmetric". Sibling protection is seeded at GoalSequence
 # boundaries, so it is inert for a goal with no multi-child GoalSequence and
@@ -49,11 +50,13 @@ def getAction(action_str, action_database):
     # Converts action name as a string to action object
     # Now only used for MOCK trials, SimFactory handles real actions    
     action_map_mock = {
-        "load"   : lambda: Load(action_database=action_database),
-        "unload" : lambda: Unload(action_database=action_database),
-        "move_A" : lambda: MockMoveA(),
-        "move_B" : lambda: MockMoveB(),
-        "move_C" : lambda: MockMoveC(),
+        "scan"     : lambda: TestAction(name="scan", action_database=action_database),
+        "load"     : lambda: TestAction(name="load", action_database=action_database),
+        "unload_A" : lambda: TestAction(name="unload_A", action_database=action_database),
+        "unload_C" : lambda: TestAction(name="unload_C", action_database=action_database),
+        "move_A"   : lambda: MockMoveA(),
+        "move_B"   : lambda: MockMoveB(),
+        "move_C"   : lambda: MockMoveC(),
     }
     
     return action_map_mock[action_str]()
@@ -81,6 +84,8 @@ def runTree(init_state, goal_state, action_database, pose_map, traverse=scopedBF
         tree.shutdown()
         return False
     
+    logger = TickLogger(tree.node, out_path="sim_timing.csv")
+
     expanded_scoped = {}     # Scoped so a condition expanded in one disjunct does not remove the other's route
     curr_world_state = set(blackboard.world_state)   # For printing world state as tree running
 
@@ -115,6 +120,7 @@ def runTree(init_state, goal_state, action_database, pose_map, traverse=scopedBF
                 curr_world_state = set(blackboard.world_state)
 
             satisfied = goalSatisfied(goal_state, blackboard.world_state)
+            logger.after_tick(root, blackboard.world_state, satisfied)
         
             if root.status == py_trees.common.Status.SUCCESS and not satisfied:
                 false_successes += 1
@@ -153,6 +159,7 @@ def runTree(init_state, goal_state, action_database, pose_map, traverse=scopedBF
                 continue
 
             print(f"next_condition: {next_condition.name}")
+            logger.expansion(next_condition)
 
             fc = expansionKey(next_condition)   # (literals, protect): a protected condition is not interchangeable with an unprotected one
 
@@ -167,8 +174,7 @@ def runTree(init_state, goal_state, action_database, pose_map, traverse=scopedBF
             tree.root = root
 
 
-            # Report protect activity only when it changes. Nonzero means this
-            # problem genuinely interferes.
+            # Report protect activity only when it changes. Nonzero means this problem genuinely interferes.
             filtered = alg.PROTECT_STATS["filtered"]
             if filtered > reported_filtered:
                 print(f"  protect filtered {filtered} action(s) so far - this problem DOES interfere")
@@ -183,6 +189,7 @@ def runTree(init_state, goal_state, action_database, pose_map, traverse=scopedBF
         print(f"  false successes  : {false_successes}")
         print(f"  protect mode     : {PROTECT_MODE}")
         print(f"  actions filtered : {alg.PROTECT_STATS['filtered']}")
+        logger.close()
         tree.shutdown() # Delete tree
 
     return ever_achieved
@@ -191,37 +198,32 @@ def runTree(init_state, goal_state, action_database, pose_map, traverse=scopedBF
 def main(args=None):
     rclpy.init(args=args)
 
-    # Set enviroment
-    # init_state = {"empty", "at_B"}
-    # goal_state = OR(AND("at_A", "full"), AND("at_C", "full"))
-
-    # # Cost in action_database is only for MOCK but not implemented for MOCK yet
-    # action_database = {
-    #         "load"     : {"pre" : ["empty"],            "add" : ["full"],                           "del" : ["empty"],          "cost" : 2.0},
-    #         "unload"   : {"pre" : ["full", "at_B"],     "add" : ["empty", "package_delivered"],     "del" : ["full"],           "cost" : 1.0},
-    #         "move_A"   : {"pre" : [],                   "add" : ["at_A"],                           "del" : ["at_B", "at_C"],   "cost" : 1.0},
-    #         "move_B"   : {"pre" : [],                   "add" : ["at_B"],                           "del" : ["at_A", "at_C"],   "cost" : 2.0},
-    #         "move_C"   : {"pre" : [],                   "add" : ["at_C"],                           "del" : ["at_A", "at_B"],   "cost" : 3.0},
-    #         } 
-
     pose_map = {
-        "A": {"goal": (0.0, 4.5, 1.0),  "bounds": ((-3.25, 3.25), (0.75, 8.25)),    "literal": "at_A"}, # Red object
-        "B": {"goal": (0.0, -4.5, 1.0), "bounds": ((-3.25, 3.25), (-8.25, -0.75)),  "literal": "at_B"}, # Big Room
-        "C": {"goal": (9.0, 0.0, 1.0),  "bounds": ((4.75, 13.25), (-8.25, 8.25)),   "literal": "at_C"},
+        "A": {"goal": (0.0, 4.5, 1.0),  "bounds": ((-3.25, 3.25), (0.75, 8.25)),   "literal": "at_A"}, # Red block room
+        "B": {"goal": (9.0, 0.0, 1.0),  "bounds": ((4.75, 13.25), (-8.25, 8.25)),  "literal": "at_B"}, # Hub, robot spawns here
+        "C": {"goal": (0.0, -4.5, 1.0), "bounds": ((-3.25, 3.25), (-8.25, -0.75)), "literal": "at_C"}, # Blue block room
     }
 
-    init_state = {"at_start"}
-    goal_state = OR(AND("has_key", "at_A"), AND("has_key", "at_C"))
+    # Warehouse task: scan the package, then leave it in bin A or bin C.
+    # Room B is the hub where the robot starts and the package is picked up.
+    init_state = {"at_B", "empty"}
+    goal_state = AND("scanned", OR("box_at_A", "box_at_C"))
 
+    # Move costs are measured by CostMapping at startup. The costs listed here
+    # are used by scan, load and unload, which have no path to measure.
     action_database = {
-        "get_key":  {"pre": ["at_start"], "add": ["has_key"], "del": [],        "cost": 1.0},
-        "go_A":     {"pre": [],           "add": ["at_A"],    "del": ["at_C", "at_start"], "cost": 5.0},
-        "go_C":     {"pre": [],           "add": ["at_C"],    "del": ["at_A", "at_start"], "cost": 3.0},
+        "scan"    : {"pre": ["at_B"],          "add": ["scanned"],       "del": [],               "cost": 2.0},
+        "load"    : {"pre": ["empty", "at_B"], "add": ["full"],          "del": ["empty"],        "cost": 2.0},
+        "unload_A": {"pre": ["full", "at_A"],  "add": ["box_at_A", "empty"], "del": ["full"],         "cost": 2.0},
+        "unload_C": {"pre": ["full", "at_C"],  "add": ["box_at_C", "empty"], "del": ["full"],         "cost": 2.0},
+        "move_A"  : {"pre": [],                "add": ["at_A"],          "del": ["at_B", "at_C"], "cost": 1.0},
+        "move_B"  : {"pre": [],                "add": ["at_B"],          "del": ["at_A", "at_C"], "cost": 1.0},
+        "move_C"  : {"pre": [],                "add": ["at_C"],          "del": ["at_A", "at_B"], "cost": 1.0},
     }
-
 
     try:
-        runTree(init_state, goal_state, action_database, pose_map)
+        runTree(init_state, goal_state, action_database, pose_map,
+                traverse=scopedCheapestFirst())
     finally:
         rclpy.shutdown()
 

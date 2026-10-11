@@ -23,7 +23,7 @@ setup(
         ],
     },
     entry_points={
-        'console_scripts': ['expand = basic_trees.Sim.ros_tree:main',
+        'console_scripts': ['sim = basic_trees.Sim.ros_tree:main',
                             'test = basic_trees.Goals.goal_tree:main',
         ],
     },

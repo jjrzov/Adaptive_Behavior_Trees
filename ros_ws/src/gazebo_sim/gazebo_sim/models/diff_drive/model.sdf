@@ -2,10 +2,14 @@
 <sdf version="1.8">
     <model name='diff_drive'>
 
-      <!-- Model frame sits on the ground plane (z=0 = floor) -->
+      <!-- Model frame sits on the ground plane (z=0 = floor), directly below the
+           wheel axle. The base frame is then the robot's centre of rotation, so an
+           in-place spin is a pure rotation for odometry and AMCL. Every link is
+           0.10 m further back than in the previous version, the robot itself is
+           unchanged. -->
 
       <link name='chassis'>
-        <pose>0 0 0.20 0 0 0</pose>
+        <pose>-0.10 0 0.20 0 0 0</pose>
         <inertial>
           <mass>2.0</mass>
           <inertia>
@@ -39,7 +43,7 @@
       </link>
 
       <link name='left_wheel'>
-        <pose>0.10 0.175 0.15 -1.5707 0 0</pose>
+        <pose>0 0.175 0.15 -1.5707 0 0</pose>
         <inertial>
           <mass>0.5</mass>
           <inertia>
@@ -83,7 +87,7 @@
       </link>
 
       <link name='right_wheel'>
-        <pose>0.10 -0.175 0.15 -1.5707 0 0</pose>
+        <pose>0 -0.175 0.15 -1.5707 0 0</pose>
         <inertial>
           <mass>0.5</mass>
           <inertia>
@@ -127,7 +131,7 @@
       </link>
 
       <link name='caster'>
-        <pose>-0.15 0 0.04 0 0 0</pose>
+        <pose>-0.25 0 0.04 0 0 0</pose>
         <inertial>
           <mass>0.1</mass>
           <inertia>
@@ -169,7 +173,7 @@
       </link>
 
       <link name="lidar_link">
-        <pose>0 0 0.32 0 0 0</pose>
+        <pose>-0.10 0 0.32 0 0 0</pose>
         <inertial>
           <mass>0.05</mass>
           <inertia>
