@@ -1,0 +1,467 @@
+\chapter{Results}
+\label{ch:results}
+\section{Construction Compactness}
+\label{sec:results_compactness}
+    % What question this experiment answers
+    This section reports the size of the unified and DNF trees across the compactness sweep of Section~\ref{subsec:construction_comparison}.
+
+    \input{figures/compactness_plots}
+
+    \subsection{Tree Size Across the Sweep}
+    \label{subsec:compactness_sweep_results}
+    % Reading the figure
+    Figure~\ref{fig:compactness_sweep} reports the size of both constructions across the sweep.
+    Each column varies one parameter of the layered domain while the other two are held at the base configuration $(d, m, k) = (3, 2, 2)$.
+    The upper row gives the node count of each arm, with measured values as markers and the closed forms derived below in \eqref{eq:node_counts} as curves.
+    The lower row gives the ratio of the DNF count to the unified count.
+
+    At the base configuration the unified tree holds 36 nodes against 93 for DNF, a ratio of 2.58.
+    Along every axis both counts grow linearly, but the DNF count grows faster, so the gap between the two widens as any parameter increases.
+    The ratio does not grow without bound, however, and along each axis it levels off toward a ceiling set by the two parameters held fixed.
+    At the deepest chain measured, $d = 40$, the ratio reaches 5.33 against a ceiling of 6.
+    
+    The one configuration where the unified construction is larger is $d = 0$, with 24 nodes against 21, since there is no shared chain to duplicate and the unified tree's separate goal condition for $x_0$ and its extra goal-structure node become pure overhead.
+    
+    On every configuration both arms bring every state of the pool into the goal, so the comparison is between trees with the same region of attraction that differ only in size.
+
+    \subsection{Deriving the Closed Forms}
+    \label{subsec:compactness_closed_forms}
+    % Condition counts
+    The closed forms follow from how each construction regresses the goal, and they are simplest to derive in terms of conditions.
+    DNF compilation regresses each conjunction $\{x_d, y^b_m\}$ as a single condition.
+    An action in either chain advances only that chain, so regressing through it moves one literal back by one step and leaves the other in place.
+    Every condition in a disjunct tree is therefore a pair $\{x_i, y^b_j\}$ with $0 \le i \le d$ and $0 \le j \le m$, where $y^b_0$ denotes the common start literal $y_{\text{start}}$, and each of the $k$ disjunct trees holds $(d+1)(m+1)$ of them.
+    The unified construction instead places $x_d$ and the disjunction under separate children of a \texttt{GoalSequence}, so the first chain regresses on its own through $d+1$ conditions and each branch regresses on its own through $m+1$.
+    \begin{equation}
+        C_{\text{unified}} = (d+1) + k(m+1), \qquad
+        C_{\text{DNF}} = k(d+1)(m+1)
+        \label{eq:condition_counts}
+    \end{equation}
+    In this domain every condition is expanded exactly once at fixpoint, so \eqref{eq:condition_counts} also gives the number of expansions each construction performs.
+
+    % What the counts enumerate
+    The two counts also differ in what they enumerate.
+    Every reachable state of the layered domain holds exactly one literal from each pool, so the domain has $(d+1)(km+1)$ reachable states (Section~\ref{subsubsec:enumerating_states}) and $(d+2) + km$ literals.
+    A DNF condition is a pair $\{x_i, y^b_j\}$ that names a literal in both pools, so it holds in exactly one reachable state.
+    Counting each distinct condition once, the DNF tree therefore holds one condition per reachable state, $(d+1)(km+1)$ in all.
+    A unified condition names a literal in only one pool, so it holds in every state containing that literal.
+    The unified tree therefore holds one distinct condition per literal, $(d+2) + km$ in all.
+    Joint regression enumerates combinations of literals across the pools, which multiply, while separate regression enumerates the literals themselves, which add.
+
+    % Conditions to node counts
+    In the layered domain, node counts follow directly from the condition counts.
+    Each condition is expanded exactly once, so it sits beneath a fallback of its own, and each condition other than a goal condition also sits in a sequence with the action that introduced it.
+    A goal condition therefore contributes two nodes, itself and its fallback, and every other condition contributes four, itself, its fallback, its sequence and its action.
+    Adding the $S$ goal-structure nodes, a tree with $C$ conditions, $G$ of them goal conditions, holds $4(C - G) + 2G + S = 4C - 2G + S$ nodes.
+    The unified tree has $G = k + 1$ and $S = 2$ for its \texttt{GoalSequence} and \texttt{GoalSelector}.
+    The DNF tree has $G = k$ and $S = 1$ for the fallback that joins its disjunct trees.
+    Substituting \eqref{eq:condition_counts} gives
+    \begin{equation}
+        N_{\text{unified}} = 4(d+1) + 2k(2m+1), \qquad
+        N_{\text{DNF}} = k\bigl(4(d+1)(m+1) - 2\bigr) + 1
+        \label{eq:node_counts}
+    \end{equation}
+    which matches the measured node count of both arms on every configuration.
+
+    \subsection{Shape of the Curves}
+    \label{subsec:compactness_curve_shape}
+    % Why the curves are lines
+    The closed forms also account for the shape of Figure~\ref{fig:compactness_sweep}.
+    The DNF count is a product of the three parameters, but that is visible only when they vary together.
+    With two of them fixed, $k(d+1)(m+1)$ is linear in the third, which is why every curve in the upper row is a line and why the two arms differ in slope rather than in form.
+    Along $d$, for instance, the DNF tree gains $k(m+1) = 6$ conditions for each step of the chain while the unified tree gains one.
+
+    % Why the ratio levels off
+    Along each axis the ratio approaches the limit of $N_{\text{DNF}} / N_{\text{unified}}$ as the swept parameter grows, which is $k(m+1)$ along $d$, $d+1$ along $m$, and $\frac{4(d+1)(m+1)-2}{2(2m+1)}$ along $k$.
+    At the base configuration these ceilings are 6, 4, and 4.6.
+    Each is set by the parameters held fixed, so a ratio above any single ceiling requires more 
+    than one parameter to grow at once.
+
+    \subsection{Sources of Compactness}
+    \label{subsec:compactness_sources}
+    % Two sources, separated by an intermediate count
+    The savings in \eqref{eq:condition_counts} have two sources, which an intermediate count separates.
+    DNF compilation builds $k(d+1)(m+1)$ conditions.
+    Regressing the two literals of each disjunct separately, while still keeping the $k$ disjuncts apart, would build $k\bigl((d+1) + (m+1)\bigr)$.
+    Factoring the shared conjunct out of the disjuncts then removes the $k - 1$ extra copies of the first chain, which gives the unified count $(d+1) + k(m+1)$.
+    The second step is the saving described in Section~\ref{sec:unified_construction}, where a shared conjunct appears once rather than once per disjunct.
+    The first step is the larger one, reducing 24 conditions to 14 at the base configuration against a further reduction to 10 from factoring.
+
+    % Separation does not need a disjunction
+    % TODO: Run results again for k=1
+    Separate regression does not depend on the disjunction.
+    With a single disjunct, $k = 1$, which lies outside the sweep because it offers no alternative, the unified tree still builds $(d+1) + (m+1)$ conditions against $(d+1)(m+1)$ for DNF.
+    The same separation is what admits sibling interference, since each child of a \texttt{GoalSequence} selects actions against its own condition alone, and Section~\ref{sec:results_interference} measures its cost when the subsystems are not independent.
+
+    \subsection{Isolation Check}
+    \label{subsec:compactness_isolation}
+    % Soundness isolation check
+    The isolation held on every configuration.
+    Neither arm reported a false success, and rebuilding the unified tree with left protection left its node count and region of attraction unchanged, as Section~\ref{subsec:layered_domain} predicts.
+
+\section{Soundness and Completeness under Interference}
+\label{sec:results_interference}
+    % What question this experiment answers
+    The compactness sweep excluded sibling interference by construction.
+    The soundness sweep of Section~\ref{subsec:soundness_and_preservation_sweep} admits it, and measures what interference costs the unified construction and what each protection mode recovers.
+    The scope comparison of Section~\ref{subsec:pruning_comparison} builds the same problems again under the global expansion rule.
+    Nested and deep goals are measured separately over one thousand problems each, pooling 20,801 and 20,804 states respectively.
+
+    \subsection{Outcomes of the Membership Test}
+    \label{subsec:interference_outcomes}
+
+    \input{figures/soundness_plots}
+
+    % Reading the figure
+    Figure~\ref{fig:soundness_outcomes} classifies every pooled state by the outcome of the membership test of Section~\ref{subsec:membership_outcomes}.
+    Each bar sums to the whole pool, and the DNF reference sits on top so that every arm reads against it.
+    No state reached the tick cap in any arm, so that outcome does not appear.
+
+    % The unprotected arm is the only unsound one
+    The unprotected arm is the only one with violations.
+    They account for 18.0\% of the pool on nested goals and 23.7\% on deep goals, and a further 0.7\% and 0.8\% of states end in a cycle.
+    Counted per tick rather than per state, the unprotected arm returned 10,579 false successes on nested goals and 14,021 on deep goals.
+
+    % Protection removes them
+    Neither protected arm returned a false success or a violation on any problem, and neither entered a cycle.
+    The reference likewise produced none.
+    Condition~\ref{cond:status} of \probprime therefore held on every problem under both protection modes.
+
+    % Where the states go
+    The two protection modes differ in where the states that the unprotected arm loses to violations end up.
+    Under left protection the share of members rises from 76.9\% to 89.0\% on nested goals and from 70.8\% to 79.3\% on deep goals, so most of that share is recovered as members.
+    Under symmetric protection it becomes honest failure instead, which grows to 49.4\% and 58.5\% of the pool.
+
+    \subsection{Persistence of Success}
+    \label{subsec:interference_persistence}
+    Finite time success also requires the root to keep reporting SUCCESS once it first does (Definition~2 of \cite{cai2021}), which the membership test does not check by itself.
+    Ticking each member once more after its first SUCCESS left the state unchanged and the root reporting SUCCESS, for every member of the left-protected trees and of the reference on all two thousand problems.
+    The status of the tree and the effect of a tick depend on the state alone, so a tick that leaves the state unchanged repeats on every later tick, and the success persists indefinitely.
+    Proposition~\ref{prop:left_soundness} does not guarantee this for every goal shape.
+    A disjunction already satisfied by a later branch may still act on an earlier one, and an action admitted there may delete a literal of a sibling to its right, but no such case occurred.
+
+    \subsection{How Much Completeness Is Lost}
+    \label{subsec:interference_completeness}
+    % Solvable states as the denominator
+    Of the pooled states, 96.9\% on nested goals and 97.0\% on deep goals are solvable in the sense of Section~\ref{sec:membership_pools_reachability}.
+    The DNF reference solves exactly these states on all two thousand problems, every solvable state and no other.
+    Its honest failures in Figure~\ref{fig:soundness_outcomes} are therefore the unsolvable states, and the share of the reference an arm preserves is the share of solvable states it solves.
+
+    % Coverage per arm
+    Figure~\ref{fig:soundness_tradeoff} places each arm by its share of solvable states solved and its node ratio (Section~\ref{subsec:reference_arm}).
+    With left protection the unified tree solves 91.8\% of solvable states on nested goals and 81.8\% on deep goals, missing 8.2\% and 18.2\% that the reference solves.
+    Symmetric protection solves 52.3\% and 42.8\%, and the unprotected arm 79.4\% and 73.0\%.
+
+    \input{figures/soundness_tradeoff}
+
+    % Deep goals lose more
+    Deep goals lose more under every arm.
+    Their \texttt{GoalSequence} has three children rather than two, so more actions delete a literal of some earlier sibling.
+    Without protection this raises violations from 18.0\% to 23.7\% of the pool, and with protection it causes candidate actions to be rejected about 1.7 times as often as on nested goals.
+
+    % Two kinds of loss
+    The unprotected arm loses solvable states mostly to violations, a failure of soundness, while the protected arms lose them to honest failures, a failure of completeness.
+    Each honest failure from a solvable state is a concrete witness of incompleteness.
+    The fixpoint tree is the largest that expansion can build, so Algorithm~2 started from that state under the same protection mode would exhaust its conditions and return no tree, while the reference shows that one exists.
+
+    \subsection{Size and the Trade-off}
+    \label{subsec:interference_tradeoff}
+
+    % Unprotected size
+    Without protection the unified tree is not reliably smaller.
+    Its node ratio is 0.89 on nested goals, about 12\% larger than the reference, and 1.43 on deep goals.
+    This differs from the layered domain of Section~\ref{sec:results_compactness}, where the shared conjunct was independent of the disjunction and the unified tree was smaller on every configuration except $d = 0$.
+    Section~\ref{subsec:discussion_conjuncts} examines why the shared conjunct pays off on one domain and not the other.
+
+    % Protection shrinks the tree
+    Protection shrinks the tree, since an action it rejects contributes no conditions to expand.
+    Left protection raises the node ratio to 1.27 and 2.55, and symmetric protection to 2.07 and 7.28.
+
+    % Left improves on off in both respects
+    Left protection improves on the unprotected arm in both respects, building the smaller tree and solving more solvable states on both goal shapes.
+    Symmetric protection is the only arm that gives up coverage for size, building the smallest trees but solving roughly half the solvable states.
+
+    \subsection{Scoped and Global Expansion}
+    \label{subsec:results_pruning}
+    % TODO: Run test and confirm numbers again
+    % What is compared
+    The scope comparison of Section~\ref{subsec:pruning_comparison} builds each problem again under the global expansion rule of \cite{cai2021}, with protection off and against left siblings.
+    The scoped trees reproduce the unified arms reported above exactly.
+
+    \begin{table}[htbp]
+      \centering
+      \caption{Share of solvable states solved and node ratio of the unified tree built with a scoped and with a global expansion record, with 95\% intervals from resampling problems. The scoped rows are the arms of Figure~\ref{fig:soundness_tradeoff}.}
+      \label{tab:scope_comparison}
+      \small
+      \begin{tabular}{llcccc}
+        \toprule
+        & & \multicolumn{2}{c}{Nested goals} & \multicolumn{2}{c}{Deep goals} \\
+        \cmidrule(lr){3-4} \cmidrule(lr){5-6}
+        Protection & Record & Solved (\%) & Node ratio & Solved (\%) & Node ratio \\
+        \midrule
+        Off  & Scoped & 79.4 [77.3, 81.4] & 0.89 [0.87, 0.90] & 73.0 [70.6, 75.2] & 1.43 [1.40, 1.45] \\
+             & Global & 58.0 [56.3, 59.6] & 3.31 [3.22, 3.41] & 42.3 [40.8, 43.7] & 8.96 [8.69, 9.23] \\
+        \midrule
+        Left & Scoped & 91.8 [90.8, 92.8] & 1.27 [1.24, 1.29] & 81.8 [80.3, 83.3] & 2.55 [2.50, 2.61] \\
+             & Global & 91.8 [90.8, 92.8] & 1.74 [1.70, 1.78] & 81.2 [79.7, 82.7] & 3.60 [3.52, 3.68] \\
+        \bottomrule
+      \end{tabular}
+    \end{table}
+
+    % Without protection
+    Without protection the global rule is badly incomplete.
+    It solves 58.0\% of solvable states on nested goals and 42.3\% on deep goals, against 79.4\% and 73.0\% for the scoped tree (Table~\ref{tab:scope_comparison}), missing about twice as many solvable states on both goal shapes.
+    Its trees are far smaller, 3.7 and 6.3 times smaller than the scoped trees, because a condition expanded in one branch is never expanded again in another and its copies elsewhere remain leaves.
+
+    % With protection
+    With left protection the difference all but disappears.
+    On nested goals the two rules solve exactly the same states on every one of the thousand problems.
+    On deep goals the scoped rule solves 0.6 points more, but the 95\% interval on that difference runs from $-0.1$ to $1.2$ points and includes zero, so no difference in coverage is established.
+    The global trees remain smaller, by a factor of 1.37 on nested goals and 1.41 on deep goals.
+    Neither global tree under left protection returned a false success or reached a violation on any problem.
+
+    % Why protection makes the global rule safe
+    A further global arm under left protection uses a record key that ignores the protect set, while protection still filters actions (Section~\ref{subsec:pruning_comparison}).
+    Its coverage falls to 65.8\% on nested goals and 49.2\% on deep goals, against 91.8\% and 81.2\% for the global arm with the full key, most of the way to the unprotected values of 58.0\% and 42.3\%.
+    This confirms the mechanism of Section~\ref{subsec:pruning_and_protect}, that protection makes the global rule safe through the key of the expansion record rather than through the actions it rejects.
+
+    % Order dependence
+    The scoped record also determines the tree independently of expansion order.
+    On a thousand flat goals built from the same problems, the scoped tree matched the reference in node count and region of attraction on every one, while the global tree depends on which branch is expanded first.
+
+    \subsection{Validity of the Sweep}
+    \label{subsec:interference_validity}
+    % Harness check
+    No member of any arm, including the global arms of Section~\ref{subsec:results_pruning}, lies outside the solvable states, so every arm's region lies within the reference's and preservation measures loss alone.
+
+    % How far the rates generalise
+    Interference in these problems is frequent by design.
+    Of the actions admitted into the disjunctive branches of the unprotected tree, 44.9\% on nested goals and 44.7\% on deep goals delete a literal of the shared conjunct, a rate set by the large deletion sets of the randomized generator.
+    The violation rates reported here should therefore not be read as an expectation for other domains, while the ordering of the arms is what the sweep establishes.
+    
+\section{Simulation Demonstration}
+\label{sec:results_sim}
+    % What this section shows
+    The experiments of Sections~\ref{sec:results_compactness} and~\ref{sec:results_interference} measured fixpoint trees offline, where every action finished in one tick and every literal was written by an action.
+    This section runs the unified construction on the simulated robot of Section~\ref{sec:sim_harness}, where neither holds and the tree is expanded while the robot executes it.
+    It is a demonstration on a single task, and its purpose is to show that the construction and its guarantees carry over to this setting.
+
+    \subsection{Task and Setup}
+    \label{subsec:sim_setup}
+    % The task
+    The robot starts at the hub's goal pose in the world of Figure~\ref{fig:sim_world} with an empty gripper.
+    The task is to scan a package in the hub and leave it in either bin.
+    The initial state is $\{\texttt{at\_B}, \texttt{empty}\}$ and the goal is
+    \begin{equation}
+        g = \texttt{scanned} \wedge (\texttt{box\_at\_A} \vee \texttt{box\_at\_C}).
+        \label{eq:sim_goal}
+    \end{equation}
+    Table~\ref{tab:sim_actions} lists the seven actions together with the Nav2 server that carries out each one.
+    Scanning is a full rotation in place, and loading and unloading are timed waits that stand in for a manipulator.
+
+    \begin{table}[htbp]
+        \centering
+        \caption[Actions of the simulation task]{Actions of the simulation task and the Nav2 server that carries out each one. The move actions for the three rooms share one schema, with $X$ the target room and $Y, Z$ the other two.}
+        \label{tab:sim_actions}
+        \begin{tabular}{@{}lllll@{}}
+            \toprule
+            Action & Preconditions & Add & Delete & Carried out by \\
+            \midrule
+            \texttt{scan}       & \texttt{at\_B}                 & \texttt{scanned}                  & ---            & Spin, $2\pi$ \\
+            \texttt{load}       & \texttt{empty}, \texttt{at\_B} & \texttt{full}                     & \texttt{empty} & Wait, 5\,s \\
+            \texttt{unload\_A}  & \texttt{full}, \texttt{at\_A}  & \texttt{box\_at\_A}, \texttt{empty} & \texttt{full}  & Wait, 5\,s \\
+            \texttt{unload\_C}  & \texttt{full}, \texttt{at\_C}  & \texttt{box\_at\_C}, \texttt{empty} & \texttt{full}  & Wait, 5\,s \\
+            \texttt{move\_$X$}  & ---                            & \texttt{at\_$X$}                  & \texttt{at\_$Y$}, \texttt{at\_$Z$} & NavigateToPose \\
+            \bottomrule
+        \end{tabular}
+    \end{table}
+
+    % Measured costs and settings
+    The measured path lengths were 12.89\,m from the hub to room~A and 9.21\,m to room~C, so room~C is the cheaper bin.
+    Room~A is the first child of the \texttt{GoalSelector} and would be chosen on a tie, so a delivery to room~C can follow only from the measured costs.
+    The remaining actions carry fixed costs from the action database. % TODO revisit once cost units are settled
+    The run used the Nav2 actions, scoped cheapest-first traversal, left protection, and scoped subset pruning.
+
+    \subsection{Online Expansion and Execution}
+    \label{subsec:sim_run}
+    % TODO: update both tables and the narrative after the rerun
+    The tree starts as the goal structure of~\eqref{eq:sim_goal} alone and grows under the loop of Section~\ref{subsec:sim_ros_trees}.
+    Table~\ref{tab:sim_expansions} lists the eight expansions of the run in the order they occurred.
+
+    \begin{table}[htbp]
+        \centering
+        \caption[Expansions of the simulation run]{Expansions of the simulation run in the order they occurred. The scope column names the GoalSelector branch the condition belongs to.}
+        \label{tab:sim_expansions}
+        \begin{tabular}{@{}rlll@{}}
+            \toprule
+            \# & Condition expanded & Scope & Actions added \\
+            \midrule
+            1 & \texttt{scanned}                               & ---  & \texttt{scan} \\
+            2 & \texttt{box\_at\_A}                            & A    & \texttt{unload\_A} \\
+            3 & \texttt{box\_at\_C}                            & C    & \texttt{unload\_C} \\
+            4 & \texttt{at\_C}, \texttt{full}                  & C    & \texttt{load}, \texttt{move\_C} \\
+            5 & \texttt{at\_A}, \texttt{full}                  & A    & \texttt{load}, \texttt{move\_A} \\
+            6 & \texttt{at\_B}, \texttt{at\_C}, \texttt{empty} & C    & none \\
+            7 & \texttt{at\_A}, \texttt{at\_B}, \texttt{empty} & A    & none \\
+            8 & \texttt{full}                                  & C    & \texttt{load} \\
+            \bottomrule
+        \end{tabular}
+    \end{table}
+
+    % Expansion narrative
+    Execution began after a single expansion.
+    Expanding \texttt{scanned} placed \texttt{scan} under the precondition \texttt{at\_B}, which held in the hub, so the next tick started the scan.
+    The robot rotated in place while the tree reported RUNNING, and no further expansion took place until the scan succeeded.
+    With \texttt{scanned} holding, the \texttt{GoalSequence} passed to the \texttt{GoalSelector}, both of whose disjuncts failed, and expansions~2 to~8 followed on consecutive ticks.
+    Expansion~8 gave the C branch a route whose precondition $\{\texttt{at\_B}, \texttt{empty}\}$ held, so the tree started \texttt{load} and expansion stopped.
+    The load started 0.01\,s of simulation time after the scan ended, so the seven expansions between the two actions took a negligible share of the run.
+
+    % Execution narrative
+    Table~\ref{tab:sim_timeline} lists the actions in the order they ran.
+    After loading, the robot drove toward room~C.
+    Once it entered the rectangle of room~C, the observer replaced \texttt{at\_B} with \texttt{at\_C}, and the condition $\{\texttt{at\_C}, \texttt{full}\}$ above the move held.
+    On the next tick the tree halted the move and started \texttt{unload\_C} where the robot stood.
+    Figure~\ref{fig:sim_tree} shows the tree at the end of the run.
+
+    % TODO: Maybe delete table
+    \begin{table}[htbp]
+        \centering
+        \caption[Execution timeline of the simulation run]{Execution timeline of the simulation run in simulation time, measured from the first tick. The move to room~C was halted by the tree when the robot entered the room, before it reached the goal pose.}
+        \label{tab:sim_timeline}
+        \begin{tabular}{@{}lrrl@{}}
+            \toprule
+            Action & Start (s) & End (s) & Ended by \\
+            \midrule
+            \texttt{scan}      &  0.00 &  6.69 & success \\
+            \texttt{load}      &  6.70 & 11.74 & success \\
+            \texttt{move\_C}   & 11.74 & 37.84 & halted \\
+            \texttt{unload\_C} & 37.84 & 42.88 & success \\
+            \bottomrule
+        \end{tabular}
+    \end{table}
+
+    \begin{figure}[htbp]
+        \centering
+        \includegraphics[width=\textwidth]{figures/sim_tree.pdf} % TODO export from ros_tree.svg
+        \caption[Tree at the end of the simulation run]{The tree at the end of the simulation run. The left child of the root GoalSequence achieves \texttt{scanned}, and its right child is the GoalSelector over the two bins. Expansion stopped once the branch for room~C had a route from the robot's state, so the condition \texttt{full} in the branch for room~A was never expanded.}
+        \label{fig:sim_tree}
+    \end{figure}
+
+    \subsection{Checking the Conditions on the Robot}
+    \label{subsec:sim_conditions}
+    % Conditions (i) and (ii)
+    Over the run the root never reported SUCCESS while the goal was false, so condition~\ref{cond:status} of \probprime held on the robot as it did in the synthetic sweeps (Section~\ref{subsec:interference_outcomes}).
+    This includes the move to room~C, whose effect arrived early through perception rather than when the move returned.
+    The goal was reached, and from the first tick on which it held the root reported SUCCESS on every later tick until the run was stopped, as condition~\ref{cond:fts} requires (Section~\ref{subsec:interference_persistence}). % TODO confirm the root stayed SUCCESS from the per-tick log
+
+    % Protection was inert
+    Protection filtered no actions during the run.
+    No action of Table~\ref{tab:sim_actions} deletes \texttt{scanned}, \texttt{box\_at\_A} or \texttt{box\_at\_C}, so the conjuncts of~\eqref{eq:sim_goal} cannot undo one another.
+
+    \subsection{Observations}
+    \label{subsec:sim_observations}
+    % Impossible conditions
+    Expansions~6 and~7 produced conditions that can never hold, such as $\{\texttt{at\_B}, \texttt{at\_C}, \texttt{empty}\}$, which places the robot in two rooms at once.
+    The STRIPS description cannot state that the room literals exclude one another, so expansion cannot tell such conditions from satisfiable ones, and their only cost was two expansions.
+    Detecting such invariants from the action descriptions is left to future work (Chapter~\ref{ch:conclusion}).
+
+    % Why room C
+    The robot delivered to room~C, the cheaper bin, but the measured costs did not decide it.
+    Expanding a condition places its subtree first among its parent's children, so after expansion~3 room~C was the first child of the \texttt{GoalSelector} (Appendix~\ref{app:selector_order}).
+    Both branches regress through the same \texttt{load} action, so once the package was loaded the unexpanded condition \texttt{full} above each move held, and the selector ran the first child whose route could now run.
+    The measured costs therefore decided the order in which conditions were expanded, while the bin followed the order of the selector's children, which follows the order of expansion rather than cost.
+ 
+\section{Discussion}
+\label{sec:results_discussion}
+    % What this section does
+    The preceding sections report what each construction does.
+    This section interprets those results against \probprime and against each other.
+    The two synthetic experiments give opposite pictures of the unified construction.
+    On the layered domain it builds a tree several times smaller than DNF compilation and covers every state the reference covers (Section~\ref{sec:results_compactness}).
+    On randomized problems it builds a modestly smaller tree but covers fewer solvable states (Section~\ref{sec:results_interference}).
+    The subsections below explain the difference and what it implies for choosing between the constructions.
+
+    \subsection{Guarantees under \probprime}
+    \label{subsec:discussion_guarantees}
+    % Condition (ii)
+    Condition~\ref{cond:status} holds for the unified construction under left protection by Proposition~\ref{prop:left_soundness}, and no measured problem contradicted it (Section~\ref{subsec:interference_outcomes}).
+    This includes the trees built with a global expansion record (Section~\ref{subsec:results_pruning}), as the proposition predicts, since its proof does not depend on how the record is scoped.
+    Without protection the condition fails.
+
+    % Condition (i)
+    Condition~\ref{cond:fts} held for every member of every protected tree, which reached $S_g$ in finite time and kept reporting SUCCESS afterward (Section~\ref{subsec:interference_persistence}).
+    What remains is how many starting states each construction serves.
+
+    % Visible and hidden failure
+    Read per starting state, the results separate three cases.
+    From a solvable starting state, DNF compilation produced a tree satisfying both conditions of \probprime on every problem measured.
+    The unified construction under left protection did so from most solvable states, and from the remainder its tree reports FAILURE, so the failure is visible to whatever relies on the tree.
+    The unprotected construction instead reports SUCCESS from many of the states it cannot solve, so its failure is hidden, which makes it the more damaging of the two.
+
+    % Back to the inherited scope
+    These results answer the questions Section~\ref{subsec:inherited-scope} left open for composed goals.
+    Soundness, which the inherited results do not reach, is restored by left protection.
+    Completeness is restored only in part, and the remaining subsections examine where.
+
+    \subsection{Separate Regression}
+    \label{subsec:discussion_separate_regression}
+    % One mechanism, two effects
+    Both experiments follow from the same property of the construction.
+    Under a \texttt{GoalSequence}, each child is regressed on its own, and an action is selected for a condition by testing that condition alone (Section~\ref{sec:unified_construction}).
+    Regressing each conjunct on its own is what keeps the tree small, since no condition combines the literals of two conjuncts.
+    Selecting actions against one conjunct at a time is what admits interference, since an action chosen for one conjunct is tested against nothing another conjunct needs.
+
+    % What protection can and cannot recover
+    Protection restores soundness by extending that test to the literals of earlier siblings, but it cannot restore the plans it forbids.
+    Section~\ref{sec:interference} argued that protection buys soundness at the cost of completeness, and the 8.2\% and 18.2\% of solvable states missed under left protection are the measured size of that cost.
+    Against the unprotected arm, however, left protection is more complete rather than less.
+    The states the unprotected arm loses to violations are lost to it in any case, and removing the actions that cause them recovers more states than the forbidden plans cost.
+    Whether the construction pays off therefore depends on whether the conjuncts of a goal can be regressed independently.
+
+    \subsection{Independent and Interacting Conjuncts}
+    \label{subsec:discussion_conjuncts}
+    % Flat goals
+    On flat goals there is nothing to factor.
+    The two constructions build the same tree with the same region of attraction (Section~\ref{sec:equivalence}), which held on every flat goal measured (Section~\ref{subsec:results_pruning}).
+
+    % Independent conjuncts
+    When the conjuncts of a goal can be regressed independently, the unified tree is smaller and loses nothing, since it regresses through the literal space rather than the state space (Section~\ref{subsec:compactness_closed_forms}).
+    The advantage grows with the number of disjunctions.
+    For a shared chain of depth $d$ and $n$ disjunctions, each with $k$ branches of depth $m$ over a pool of its own, DNF compilation plans $k^n$ sub-goals of $(d+1)(m+1)^n$ conditions each, while the unified construction builds $(d+1) + nk(m+1)$ conditions in all.
+    These counts are derived rather than measured, and for $n = 1$ they reduce to \eqref{eq:condition_counts}.
+    DNF normalization multiplies across disjunctions, while the unified tree grows only with the length of the goal.
+
+    % Interacting conjuncts
+    When the conjuncts interact, the smaller tree comes at a measured cost.
+    On randomized problems the unified tree under left protection is smaller than the reference on both goal shapes but misses solvable states that DNF compilation solves (Figure~\ref{fig:soundness_tradeoff}).
+    The generator makes interaction common by design (Section~\ref{subsec:interference_validity}), and on such problems DNF compilation is the construction that solves every solvable state.
+
+    % Where navigation sits
+    In the action model of the simulation, a move deletes only room literals, so conjuncts can interfere only when the goal names where the robot must be.
+    The simulation task names no room.
+    Its conjuncts are \texttt{scanned} and the two \texttt{box\_at} literals, no action of Table~\ref{tab:sim_actions} deletes any of them, and protection filtered no actions during the run (Section~\ref{subsec:sim_conditions}).
+    A goal such as $\texttt{at\_B} \wedge (\texttt{box\_at\_A} \vee \texttt{box\_at\_C})$, which asks the robot to finish in the hub, would interact, since every move to a bin deletes \texttt{at\_B}.
+    Left protection would then forbid both deliveries, while DNF compilation regresses \texttt{at\_B} jointly with each bin and finds the plan that returns to the hub afterward.
+
+    % Choosing between the constructions
+    The choice between the constructions therefore turns on whether an action available to one sibling of a \texttt{GoalSequence} can delete a literal another sibling needs.
+    Where none can, as in the simulation task, the unified tree is expected to lose nothing and is the smaller of the two, and where some can, DNF compilation is the construction that solves every solvable state.
+    Deciding this from the action database before either tree is built is left to future work (Chapter~\ref{ch:conclusion}).
+
+    \subsection{Defaults of the Construction}
+    \label{subsec:discussion_defaults}
+    % Left protection
+    Protection against left siblings is adopted as the default.
+    It satisfies condition~\ref{cond:status}, solves the largest share of solvable states of any sound unified arm, and builds a smaller tree than the reference on both goal shapes.
+    Against the unprotected arm it builds the smaller tree and solves more solvable states, so it improves on no protection in every respect measured (Section~\ref{subsec:interference_tradeoff}).
+
+    % Why not symmetric
+    Symmetric protection is not adopted.
+    The proof of Proposition~\ref{prop:left_soundness} needs only the actions beneath later siblings to be restricted, since an action that deletes a literal a later sibling needs runs before that sibling is ticked, which then achieves the literal again or fails.
+    The further deletions symmetric protection forbids therefore prevent no violation, and they account for the solvable states it misses beyond those left protection misses.
+    Symmetric protection also guards against siblings undoing each other indefinitely, but no cycle occurred under left protection.
+
+    % Scoping
+    Scoping of the expansion record and of pruning is kept.
+    Under left protection it enlarges the tree by about 40\% and costs no measured coverage (Section~\ref{subsec:results_pruning}), and in exchange the tree does not depend on expansion order (Section~\ref{subsec:pruning_scopes}).
+    The cost-aware traversal of the simulation harness relies on the same property, since a global record can remove the route of the cheaper disjunct before that route is ever costed.

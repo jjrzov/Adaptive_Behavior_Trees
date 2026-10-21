@@ -1,0 +1,55 @@
+\chapter{Introduction}
+\label{ch:intro}
+\section{Motivation}
+\label{sec:motivation}
+    % Robots acting toward goals
+    Autonomous robots must often act deliberately and choose actions based on an objective with justifiable reasoning about that objective \cite{ingrand2017}.
+    Objectives are presented as a task, holding specifications of a mission for the robot to achieve.
+    Changes to the state of the robot and its environment are events, which can be caused by the robot or an external force that may be expected or unexpected \cite{ingrand2017}.
+    Task planning serves as deciding which actions achieve a task, while acting is the problem of carrying them out while events occur.
+
+    % Three approaches to task planning
+    Approaches to producing autonomous behavior fall broadly into three families \cite{karpas2020}.
+    Programming-based approaches have a designer write the behavior directly, learning-based approaches acquire it from data or experience, and model-based approaches derive it by reasoning over a model of the world and of how actions change it.
+    This thesis is model-based, since the trees it builds are derived from a description of the robot’s actions,
+
+    % Model-based systems
+    A model-based system pairs a planner, which reasons over symbols such as whether the robot is in a given room rather than over raw sensor values, with an executive that carries out the plan \cite{karpas2020}.
+    The executive runs actions, monitors whether the plan remains valid as observations arrive, and calls on the planner for a new plan when it does not.
+
+    % Why BTs
+    Whether written by hand or produced by a planner, a robot's behavior must be held in a control architecture that decides which action runs at each moment.
+    Finite state machines have long served this role, but their switching logic is written into explicit transitions, so changing a behavior means rewiring the transitions around it \cite{colledanchise2018book}.
+    Behavior trees (BTs) instead encode the switching logic in the structure of a tree, so a subtree can be added or removed without editing the rest \cite{ogren2012}.
+    This modularity led robotics to adopt them in place of hierarchical state machines \cite{bagnell2012}, and BTs have been shown to generalize several earlier architectures, including the subsumption architecture \cite{colledanchise2017tro}.
+
+    % Reactive planning and acting
+    A BT built backward from a goal also checks its conditions on every tick.
+    It skips an action whose effect already holds and reruns an action whose effect has been undone, so the robot recovers from many changes in the world without returning to the planner \cite{colledanchise2019pabt}.
+    BT Expansion builds such trees automatically from a model of the robot's actions, and is proven to be sound and complete \cite{cai2021}.
+    % TODO: optional figure, a small tree for the warehouse task or a frame from the simulation run
+
+\section{Problem}
+\label{sec:problem}
+    % The task
+    Consider a robot in a packaging warehouse that must scan a package and leave it in either of two bins.
+    The task has an alternative built into it, since either bin completes it.
+
+    % BT Expansion cannot express it
+    BT Expansion takes as its goal a single condition, a set of facts that must all hold, so a goal with alternatives cannot be stated \cite{cai2021}.
+    The existing workaround compiles each alternative into its own tree and joins the trees together \cite{chen2024}.
+    Work the alternatives share, such as scanning the package, is then planned again in every tree.
+
+    % The open question
+    Building a single tree in which shared work appears once means planning the parts of the goal separately.
+    The parts may then undo one another while the tree runs, and a tree whose parts interfere can report success when the goal does not hold.
+
+\section{Contributions}
+\label{sec:contributions}
+    This thesis extends BT Expansion to goals built from nested AND and OR operators, and makes the following contributions.
+    \begin{enumerate}
+        \item A construction that builds a single behavior tree for a goal with nested AND and OR operators, in which a part shared by several alternatives is expanded once rather than once per alternative as in the existing compilation approach \cite{chen2024} (Section~\ref{sec:unified_construction}).
+        \item A protection rule that prevents the parts of a conjunction from undoing one another during execution, with a proof that it restores soundness (Section~\ref{sec:interference}).
+        \item A method for measuring the region of attraction of a behavior tree state by state, which distinguishes a tree that fails honestly from one that reports success outside its goal (Section~\ref{sec:membership}).
+        \item An evaluation showing that the unified tree grows with the number of facts the goal mentions where compilation grows with the number of states of the world, that the protection rule eliminates every false success while still solving most solvable states when the parts of a goal interact, and a demonstration on a simulated robot running ROS~2 and Nav2 (Chapter~\ref{ch:results}).
+    \end{enumerate}

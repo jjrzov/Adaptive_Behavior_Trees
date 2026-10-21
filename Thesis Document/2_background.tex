@@ -1,0 +1,318 @@
+\chapter{Background}
+\section{Task Representation and Regression}
+\label{sec:task_planning}
+    A model-based planner needs a formal description of the task, given either as a model of the actions available to the robot or as a specification of the behavior it must produce.
+    
+    \subsection{Representing Tasks}
+    \label{subsec:tp_classical}
+    % Classical assumptions
+    Classical planning exists as a model-based setting where the world is deterministic and its state is fully observable. 
+    The robot becomes the only agent changing the world, with instantaneous actions \cite{karpas2020}.
+
+    % STRIPS
+    STRIPS was developed for the robot Shakey, where a planner sequenced intermediate-level actions toward a goal \cite{fikes1971, nilsson1984}.
+    The original formulation represented world models as formulas of first-order predicate calculus, and searched for a sequence of operators that transforms the initial model into one where the goal can be proven \cite{fikes1971}.
+    This thesis uses the propositional form of STRIPS, with no variables or quantifiers \cite{karpas2020, cai2021}.
+    Literals are a ground proposition about the world either being true or false within a state.
+    A state $s$ is the set of literals that are true in it, any literal not in $s$ is false, \cite{fikes1971, cai2021}.
+    Each action $a$ has a precondition set $pre(a)$, an add set $add(a)$, and a delete set $del(a)$.
+    When $pre(a) \subseteq s$ holds, the action can be considered applicable to the state and applying it yields the new state
+    \begin{equation}
+        s' = (s \setminus del(a)) \cup add(a).
+        \label{eq:strips_transition}
+    \end{equation}
+    A goal is a set of literals $g$, satisfied in $s$ when $g \subseteq s$.
+    Plans are a sequence of actions that transforms the initial state into one satisfying the goal.
+
+    \phantomsection\label{subsec:tp_synthesis}
+    % Formal methods and LTL
+    Formal methods describe the desired behavior of a robot as a mathematically precise specification \cite{kressgazit2018}.
+    Verification checks that a given system satisfies a specification, while synthesis constructs a controller that satisfies it by design or reports that none exists \cite{kressgazit2018}.
+    Specifications are commonly written in linear temporal logic (LTL), which extends propositional logic with operators describing how truth values evolve over time, such as always, eventually, and until \cite{pnueli1977}.
+    Kress-Gazit et al.\ synthesize a reactive controller from a task written in the GR(1) fragment of LTL, but its guarantee holds only while the environment respects the assumptions of the specification, and execution may halt when the robot is moved somewhere the specification did not anticipate \cite{kressgazit2009}.
+
+    \subsection{Plans by Regression}
+    \label{subsec:tp_regression}
+    % Regression
+    A plan can also be built backward from the goal.
+    Regressing a goal $g$ through an action $a$ that deletes none of its literals gives the condition under which running $a$ achieves $g$,
+    \begin{equation}
+        pre(a) \cup (g \setminus add(a)),
+        \label{eq:regression}
+    \end{equation}
+    the preconditions of $a$ together with the literals of $g$ that $a$ does not supply. % TODO: cite a textbook for regression
+    Repeating the step yields a chain of conditions, each leading to the goal through the actions after that follow it.
+    The structures in this section store such conditions and choose the next action by testing them against the current state, which places part of the executive's monitoring in the plan itself.
+    
+    % Three structures, and the bridge to BTs
+    Triangle tables store a single plan together with the regressed condition of each remaining part of it, so their executor can skip steps whose effects already hold and repeat steps that failed \cite{fikes1972}. % TODO: verify the repeat claim in the paper
+    Universal plans regress from the goal to cover every state the robot may reach \cite{schoppers1987}
+    While this allows for an unpredictable environment to never forces the robot to stop and replan, the number of states can make such a plan infeasibly large \cite{ginsberg1989}.
+    Teleo-reactive programs are ordered lists of condition-action rules in which the first rule whose condition holds is executed, and each condition is the regression of the one above it through that rule's action \cite{nilsson1994}.
+    Behavior trees compose such condition-action pairs modularly, and BT Expansion builds them by regression (Section~\ref{subsec:bt_expansion}).
+
+\section{Behavior Trees}
+\label{sec:background_bt}
+    \subsection{Structure and Execution}
+    \label{subsec:bt_structure}
+    % The tree
+    A BT is a directed rooted tree \cite{colledanchise2018book, marzinotto2014}.
+    The outgoing node between two connected nodes is the parent and the incoming node is the child.
+    Nodes without children are leaves, and the single node without a parent is the root.
+    Internal nodes are control flow nodes, also called composites, which decide the order in which their children run, and leaves are execution nodes, which act on or sense the system \cite{colledanchise2018book}.
+
+    % Ticks and return statuses
+    Execution is driven by ticks \cite{marzinotto2014}.
+    The root generates a tick at a fixed frequency and passes it down the tree according to the rules of each control flow node.
+    A node runs only while it receives ticks.
+    When a tick reaches a leaf, the leaf performs one step of its computation and returns one of three statuses to its parent, SUCCESS, FAILURE, or RUNNING.
+    Statuses propagate back up the tree, capable of causing other leaves to be ticked, until a status reaches the root, ending the tick.
+    
+    % Node types
+    Four node types are used in this thesis \cite{colledanchise2018book}.
+    A sequence ticks its children from left to right as long as they return SUCCESS.
+    It returns FAILURE or RUNNING as soon as a child does, and SUCCESS only if every child succeeds.
+    A fallback, also called a selector, ticks its children from left to right as long as they return FAILURE.
+    It returns SUCCESS or RUNNING as soon as a child does, and FAILURE only if every child fails.
+    An action returns SUCCESS when it has completed, FAILURE when it cannot complete, and RUNNING while it is under way.
+    A condition tests a proposition about the system and returns SUCCESS or FAILURE, never RUNNING, and it changes nothing \cite{ogren2012}.
+    Parallel and decorator nodes also appear in the literature, ticking several children at once or modifying the status of a single child, but they are not used here \cite{colledanchise2018book, marzinotto2014}.
+    
+    % Formal ticking conditions
+    These rules determine exactly when a node is reached.
+    Under a sequence, the $j$-th child is ticked at time $t_k$ only if each of the first $j-1$ children returned SUCCESS at $t_k$, and under a fallback only if each of them returned FAILURE \cite{marzinotto2014}.
+
+    % AND and OR reading
+    When every child is a condition, a sequence computes the conjunction of its children and a fallback computes their disjunction \cite{ogren2012, colledanchise2016tr}.
+    Figure~\ref{fig:bt_example} shows the two composites together.
+    The fallback first checks whether the robot is already in room~A, and only ticks the sequence that opens the door and moves the robot if it is not.
+
+    \input{figures/bt_example}
+
+    % Memory, halting, and the blackboard
+    The sequence and fallback above are memoryless, ticking their children from the first on every tick, so a condition that held on one tick is checked again on the next.
+    Composites with memory instead resume from the child that last returned RUNNING, which saves re-checking conditions but means an earlier child that stops holding goes unnoticed, so a tree built only from them cannot react to changes \cite{marzinotto2014, colledanchise2021implementation}.
+    Every composite in this thesis is memoryless (Section~\ref{subsec:membership_guards}).  % TODO: memoryless stated here so dont repeat it in other chapters
+    An action that takes time typically starts its work on its first tick and reports RUNNING until the work finishes, and if a higher-priority branch takes over, the action is halted and its work canceled \cite{colledanchise2021implementation}.
+    Nodes do not refer to one another, and communicate instead through a blackboard, a shared memory that any node can read and write \cite{colledanchise2021implementation}.
+
+    \subsection{Relation to Other Architectures}
+    \label{subsec:bt_relation}
+    % Generalization results
+    A TR program becomes a fallback over sequences, each pairing a rule's condition with its action, so the first rule whose condition holds is the one that runs \cite{colledanchise2016tr}.
+    The same work maps And-Or trees onto BTs, turning OR nodes into fallbacks and AND nodes into sequences, and takes the subproblems of an AND node to be independent, an assumption Section~\ref{sec:interference} returns to \cite{colledanchise2016tr}.
+
+    % Reactivity
+    Biggar et al.\ call an architecture reactive when its selected action depends only on the most recent input, so execution restarts from the root on every input \cite{biggar2021}.
+    BTs and TR programs are reactive in this sense, while an FSM is not, since its action depends on the state it is currently in, which depends on earlier inputs \cite{biggar2021}.
+    The soundness argument of Section~\ref{sec:interference} relies on this property, since it assumes the status of the tree depends on the current state alone.
+
+    \subsection{State-Space Formulation}
+    \label{subsec:bt_statespace}
+    % Origin of the formulation
+    The guarantees of this thesis are stated in the state-space formulation of BTs of Colledanchise and Ögren, which describes the state as a vector in $\mathbb{R}^n$ \cite{colledanchise2017tro, colledanchise2018book}.
+    BT Expansion restates it over the discrete states of Section~\ref{subsec:tp_classical}, where a state is a set of literals, and that form is used here \cite{cai2021}.
+    
+    \begin{definition}[Behavior tree \cite{cai2021}]
+    \label{def:bt}
+        A BT is a three-tuple $\mathcal{T}_i = \langle f_i, r_i, \Delta t \rangle$, where $f_i$ maps a state to the state that results from ticking the tree, $\Delta t$ is the time step between ticks, and $r_i$ maps a state to the status SUCCESS, RUNNING, or FAILURE.
+        The status partitions the states into the success region $S_i$, the running region $R_i$, and the failure region $F_i$.
+        Execution follows $s_{k+1} = f_i(s_k)$ with $t_{k+1} = t_k + \Delta t$.
+    \end{definition}
+
+    % Status as a function of state
+    Because the composites carry no memory, the status $r_i$ is a function of the state alone, which is the reactivity of Section~\ref{subsec:bt_relation}.
+
+    \begin{definition}[Finite time successful \cite{colledanchise2017tro, cai2021}]
+    \label{def:fts}
+        A BT is finite time successful with region of attraction $R'$ if, for every starting state $s_0 \in R'$, there is a finite time $\tau$ such that $r_i(s_t) = $ RUNNING for every $t < \tau$ and $r_i(s_t) = $ SUCCESS for every $t \geq \tau$.
+    \end{definition}
+    
+    % Reading the definition
+    The region of attraction is the set of states from which the tree reaches success in finite time and stays there.
+    Its size is a measure of robustness, since a larger region means the tree succeeds from more of the states the robot may find itself in \cite{colledanchise2017tro}.
+
+    % Composition lemmas
+    Finite time success composes through the tree \cite{colledanchise2017tro, colledanchise2018book}.
+    If $\mathcal{T}_1$ and $\mathcal{T}_2$ are finite time successful and $S_1 = R'_2 \cup S_2$, so that $\mathcal{T}_2$ keeps the state within the success region of $\mathcal{T}_1$, then their sequence is finite time successful with region of attraction $R'_1 \cup R'_2$ and success region $S_1 \cap S_2$.
+    If instead $S_2 \subset R'_1$, so that $\mathcal{T}_2$ hands the state to $\mathcal{T}_1$, then their fallback is finite time successful with region of attraction $R'_1 \cup R'_2$ and success region $S_1$.
+    The fallback case is the one that lets a region of attraction grow, since each child added beneath a fallback can contribute its own region.
+
+    % Disturbances
+    A disturbance is an event outside the tree that changes the state between ticks, such as an object moved by another agent or dropped by the robot itself \cite{ogren2020}.
+    Because the status depends on the state alone, the next tick simply starts from the disturbed state.
+    If that state still lies in the region of attraction, the tree reaches success without any replanning, which is the sense in which a BT rejects disturbances at the task level \cite{ogren2020}.
+
+    \subsection{Constructing Behavior Trees}
+    \label{subsec:bt_construction}
+    % Ways of constructing BTs, and lead into Section 2.3
+    Most BTs in practice are written by hand \cite{iovino2022}, sometimes by end users through a graphical interface, as in CoSTAR \cite{paxton2017}.
+    Others are produced in part by a planner, as in the extended BTs of Rovida et al., where a classical planner sequences skills and a hierarchical task network (HTN) planner, which breaks tasks into subtasks using designer-written methods, decomposes them into an executable tree \cite{rovida2017}.
+    BTs can also be learned, by greedy search combined with genetic programming \cite{colledanchise2019learning} or from demonstration \cite{colledanchise2018book}, or generated by large language models \cite{ao2025, izzo2024btgenbot}, though such a tree carries no guarantee of reaching its goal.
+    Trees with guarantees can be synthesized from the temporal logic specifications of Section~\ref{subsec:tp_synthesis} \cite{colledanchise2017synthesis, wu2025effbt}, and an existing tree can be verified against such a specification \cite{biggar2020}.
+    Finally, a BT can be built backward from its goal by the regression of Section~\ref{subsec:tp_regression}, and Section~\ref{sec:bt_planning} reviews the planners that do so.
+    
+\section{Planning Behavior Trees}
+\label{sec:bt_planning}
+    \subsection{Backchaining}
+    \label{subsec:rw_backchaining}
+    % PA-BT, the construction
+    Colledanchise et al.\ proposed planning BTs by backchaining in PA-BT \cite{colledanchise2019pabt, colledanchise2018book}.
+    Each action is first turned into an atomic BT, a fallback over the condition the action achieves and a sequence of the action's preconditions followed by the action itself.
+    Planning starts from a sequence of the goal conditions.
+    The tree is executed, and whenever it fails, the deepest condition that returned FAILURE is replaced by the atomic BTs of the actions that achieve it.
+    The tree is expanded only until it can act from the current state, and is expanded again when execution reveals a condition that does not hold.
+
+    % PA-BT, the design requirements
+    The construction is designed so that the tree handles changes in the world without replanning \cite{colledanchise2019pabt}.
+    If another agent undoes one of the robot's actions, the condition above that action fails again and the action reruns.
+    If another agent achieves a condition the robot was about to work toward, the condition succeeds and the actions beneath it are skipped.
+    If several actions achieve the same condition, all of them sit under its fallback, so one can be tried when another fails.
+    
+    % Conflicts
+    Planning each part of a goal separately can produce conflicts, since an action that achieves one part may delete a literal that another part needs.
+    Classical planners met the same problem with goals made of several conjuncts, the operands of a conjunction.
+    NOAH recognized such conflicts by checking whether an action in one subplan deleted a precondition of another, and resolved each by ordering the subplans so that the endangered conjunct was achieved after the deleting action \cite{sacerdoti1975}.
+    Later planners fix an order over the conjuncts in advance, but committing to an order can cost the planner its completeness \cite{koehler2000}.
+    PA-BT resolves conflicts by ordering, as NOAH did, moving the subtree that holds a conflicting action to the left so that it runs earlier \cite{colledanchise2019pabt}.
+    Tadewos et al.\ use the same backchaining loop and the same resolution, and add safety guarantees by verifying each action's controller \cite{tadewos2019}.
+
+    % Convergence and invariance
+    Other work analyzes when a backchained tree is guaranteed to converge.
+    Ögren defines the active constraint conditions of an action as the conditions that must return SUCCESS for the tick to reach it, excluding its own preconditions, which are those held by the children to the left of its path at every sequence above it \cite{ogren2020}.
+    A tree in which every action finishes in finite time and leaves its active constraint conditions invariant is guaranteed to converge \cite{ogren2020}, and Sprague and Ögren extend the result to execution that cycles among subtrees \cite{sprague2023}.
+    Özkahraman and Ögren give a similar condition for a sequence of fallbacks, each pairing a goal $C_i$ with an action $A_i$ that achieves it, where every goal is eventually satisfied together if each $C_i$ is invariant under the actions to its right \cite{ozkahraman2020}.
+    They use control barrier functions to design actions that keep the earlier goals invariant.
+
+    % How these works treat conflicts
+    These works handle conflicts between the parts of a tree in two ways.
+    PA-BT and the planner of Tadewos et al.\ reorder subtrees when a conflict is found.
+    The convergence results of Ögren and of Özkahraman and Ögren, and the existence result of Tadewos et al., instead assume that no action undoes a condition that the tree has already established, and leave it to the designer of the actions to ensure it.
+
+    \subsection{BT Expansion}
+    \label{subsec:bt_expansion}
+    % Introduction, what it is
+    BT Expansion is a sound and complete algorithm for planning BTs over the STRIPS action model of Section~\ref{subsec:tp_classical} \cite{cai2021}.
+    This thesis extends it, and its propositions and lemma are referred to below by their numbering in \cite{cai2021}.
+    
+    % Problem 1
+    The problem it solves is stated over the discrete form of the state-space formulation of Section~\ref{subsec:bt_statespace}. % TODO: use the environment that matches \probone and \probprime
+    \begin{problem}[Behavior planning \cite{cai2021}]
+    \label{prob:one}
+        Given $\langle S, A, \mathcal{T}, s_0, g \rangle$, where $S$ is a finite set of states, $A$ a finite set of actions, $\mathcal{T}$ the behavior tree of the robot, $s_0$ the initial state, and $g$ a goal condition, build a BT $\mathcal{T}_s$ with actions from $A$ such that $\mathcal{T}_s$ is finite time successful with region of attraction $R' \ni s_0$, and every state $s$ in its success region satisfies $g \subseteq s$.
+    \end{problem}
+
+     % Action model
+    Actions follow the STRIPS model of Section~\ref{subsec:tp_classical}, with $add(a) \cap del(a) = \emptyset$ and $add(a) \cap pre(a) = \emptyset$.
+    While an action runs, its preconditions are assumed to keep holding, it finishes in finite time, and its effects \eqref{eq:strips_transition} take place only at the tick on which it returns SUCCESS.
+
+    \subsubsection{One-Step Expansion}
+    \label{subsec:one-step}
+    \input{figures/one_step_expansion}
+    % Selecting actions
+    Expansion operates on a single condition node $c$ and replaces it with a subtree that reaches $c$ from a wider set of states (Figure~\ref{fig:one_step_expansion}).
+    An action $a$ is selected when
+    \begin{equation}
+      c \cap (pre(a) \cup add(a) \setminus del(a)) \neq \emptyset
+      \quad\text{and}\quad
+      c \setminus del(a) = c.
+      \label{eq:action-selection}
+    \end{equation}
+    The first test requires the action to share a literal with $c$ through what it requires or what it adds, and the second requires it to leave every literal of $c$ intact.
+
+    % c_attr
+    For each selected action, expansion forms the condition under which that action leads to $c$, which is the regression \eqref{eq:regression} of $c$ through $a$,
+    \begin{equation}
+      c^a_{attr} = pre(a) \cup c \setminus add(a).
+      \label{eq:cattr}
+    \end{equation}
+    The pair is placed in a sequence structure, a sequence node whose two children are the condition $c^a_{attr}$ followed by the action $a$ \cite{cai2021}.
+    The original condition node and one sequence structure per selected action are gathered under a fallback node, which replaces $c$ in the tree.
+    The subtree therefore succeeds immediately where $c$ already holds, and otherwise runs whichever action has its attributed condition satisfied.
+    As $c^a_{attr}$ is a condition node, it may be expanded in turn.
+
+    \subsubsection{Expansion Loop}
+    \label{subsec:expansion_loop}
+    % The loop
+    Algorithm~\ref{alg:bt_expansion} repeats the one-step expansion, starting from a tree that holds only the goal condition, until the tree can run from the initial state \cite{cai2021}.
+    The next condition to expand is chosen by any traversal that skips conditions already expanded, such as breadth-first search.
+    Every expanded condition is recorded in a single set shared by the whole tree.
+    After each expansion, any sequence structure whose condition exactly matches a recorded condition is pruned, which keeps the loop from expanding the same condition again and, since only finitely many distinct conditions can be formed from the literals, ensures it terminates (Proposition~4 of \cite{cai2021}).
+    
+    \begin{algorithm}[htbp]
+        \caption{BT Expansion \cite{cai2021}}
+        \label{alg:bt_expansion}
+        \begin{algorithmic}[1]
+            \State $\mathcal{T} \gets$ condition node $g$
+            \State $\mathit{Expanded} \gets \emptyset$
+            \State $r \gets \textsc{Tick}(\mathcal{T})$
+            \While{$r = \text{FAILURE}$}
+                \State $c \gets \textsc{TraverseToNextCondition}(\mathcal{T}, \mathit{Expanded})$
+                \If{no such $c$ exists}
+                    \State \Return FAILURE
+                \EndIf
+                \State $\mathcal{T} \gets \textsc{Expand}(\mathcal{T}, c)$
+                \State $\mathcal{T} \gets \textsc{Prune}(\mathcal{T}, \mathit{Expanded})$
+                \State $\mathit{Expanded} \gets \mathit{Expanded} \cup \{c\}$
+                \State $r \gets \textsc{Tick}(\mathcal{T})$
+            \EndWhile
+            \State \Return $\mathcal{T}$
+        \end{algorithmic}
+    \end{algorithm}
+
+    \subsubsection{Correctness Results}
+    \label{subsec:inherited-correctness}
+    % Proposition 1 and 2
+    By Proposition~1 of \cite{cai2021}, a sequence structure for action $a$ is finite time successful for the success region of $c$, with region of attraction $s^a_{attr} = \{s \in S \mid c^a_{attr} \subseteq s\}$.
+    By Proposition~2, the fallback that gathers the sequence structures of every selected action is finite time successful for the same success region, with region of attraction $\bigcup_a s^a_{attr}$.
+    Each expansion therefore widens the set of states from which $c$ is reached, and the union form is what makes repeated expansion accumulate coverage rather than replace it.
+
+    % Lemma 1
+    Lemma~1 lifts Proposition~2 to the tree as a whole, placing every condition node added during the loop in the region of attraction of the goal.
+    Its proof is an induction anchored at the initial tree, whose only condition node is the goal itself, and carried forward through Proposition~2 at each expansion.
+
+    % Soundness and completeness
+    Proposition~5 establishes that a returned tree solves Problem~\ref{prob:one}, since the loop exits only when some condition node holds in $s_0$ and Lemma~1 places that node in the region of attraction of the goal.
+    Proposition~6 establishes that the loop returns a tree whenever one exists, by following a solution backward from the goal and showing that every state along it satisfies some condition the loop creates.
+
+    % Relation to PA-BT
+    BT Expansion differs from PA-BT in two respects that matter here.
+    It regresses a whole condition set through an action, so $c^a_{attr}$ remains a single condition, where PA-BT places each precondition under its own condition node.
+    Its selection rule \eqref{eq:action-selection} also refuses any action that deletes a literal of the condition being expanded.
+    For a goal that is a single condition, conflicts of the kind PA-BT reorders therefore cannot arise, and no reordering step is needed.
+
+    \subsection{Successors of BT Expansion}
+    \label{chen2024_section}
+    % OBTEA
+    OBTEA extends BT Expansion to goals over conjunction, disjunction, and negation, which a language model produces from natural language instructions \cite{chen2024}.
+    The goal is normalized into disjunctive normal form, and each conjunction is planned as a separate sub-goal by a search that expands the condition of lowest total action cost first.
+    Each resulting subtree is compacted by factoring the literals that adjacent conditions share into a single condition checked first, and the subtrees are joined under a fallback in order of cost \cite{chen2024}.
+
+    % Other successors
+    Other successors have made expansion faster, with a language model proposing a heuristic path that orders expansion \cite{cai2024hbtp}, or extended it to teams of robots \cite{cai2025mrbtp} and to automatically constructed action models \cite{cai2026cabto}.
+    HBTP restricts itself to conjunctive goals, noting that a disjunction can be handled by joining sub-goal trees under a fallback \cite{cai2024hbtp}, the same compilation OBTEA uses.
+
+    \subsection{Structured Goals}
+    \label{subsec:rw_structured}
+    % Three approaches
+    Disjunctive goals have been handled in three ways.
+    OBTEA compiles the goal into separate subtrees, one per term of its disjunctive normal form, so a literal shared by several terms is planned once in each (Section~\ref{chen2024_section}).
+    Neupane et al.\ instead translate a goal written in a fragment of finite-trace LTL directly into a tree, with a selector for each disjunction and a parallel node for each conjunction, and leave each task's action to an off-the-shelf planner \cite{neupane2023}.
+    BT-Espresso reads AND and OR as the conditions for choosing an action rather than as a goal, minimizing each rule learned from demonstrations as a Boolean formula in which conjunction becomes a sequence and disjunction a fallback \cite{french2019}.
+
+    % The gap
+    None of these regresses a goal with nested AND and OR operators as a single tree, and none states what happens to soundness when the parts of a conjunction are planned separately.
+
+\section{Robot Software Stack}
+\label{sec:ros_stack}
+    % ROS 2
+    The planner runs on ROS~2, middle-ware that structures a robot's software as separate processes, called nodes, which communicate through topics, services, and actions \cite{macenski2022ros2}.
+    An action is a long-running request that reports feedback while it is under way and can be canceled before it finishes, much like a BT action that returns RUNNING and can be halted.
+
+    % py_trees
+    The trees are built with \texttt{py\_trees}, a Python library of BT nodes, composites, and a blackboard \cite{pytrees}, and run inside ROS~2 through \texttt{py\_trees\_ros} \cite{pytreesros}.
+
+    % Navigation and simulation
+    Navigation is provided by Nav2, the ROS~2 navigation stack, which plans paths and drives the robot to a goal pose \cite{macenski2020nav2}.
+    Nav2 coordinates its own planning and recovery with an internal BT, separate from the task-level tree built in this thesis.
+    Maps are built with SLAM Toolbox, the robot is localized against them by adaptive Monte Carlo localization, and the robot and its world are simulated in Gazebo.
