@@ -104,7 +104,6 @@
     % What question this experiment answers
     The compactness sweep excluded sibling interference by construction.
     The soundness sweep of Section~\ref{subsec:soundness_and_preservation_sweep} admits it, and measures what interference costs the unified construction and what each protection mode recovers.
-    The scope comparison of Section~\ref{subsec:pruning_comparison} builds the same problems again under the global expansion rule.
     Nested and deep goals are measured separately over one thousand problems each, pooling 20,801 and 20,804 states respectively.
 
     \subsection{Outcomes of the Membership Test}
@@ -181,58 +180,11 @@
     Left protection improves on the unprotected arm in both respects, building the smaller tree and solving more solvable states on both goal shapes.
     Symmetric protection is the only arm that gives up coverage for size, building the smallest trees but solving roughly half the solvable states.
 
-    \subsection{Scoped and Global Expansion}
-    \label{subsec:results_pruning}
-    % TODO: Run test and confirm numbers again
-    % What is compared
-    The scope comparison of Section~\ref{subsec:pruning_comparison} builds each problem again under the global expansion rule of \cite{cai2021}, with protection off and against left siblings.
-    The scoped trees reproduce the unified arms reported above exactly.
-
-    \begin{table}[htbp]
-      \centering
-      \caption{Share of solvable states solved and node ratio of the unified tree built with a scoped and with a global expansion record, with 95\% intervals from resampling problems. The scoped rows are the arms of Figure~\ref{fig:soundness_tradeoff}.}
-      \label{tab:scope_comparison}
-      \small
-      \begin{tabular}{llcccc}
-        \toprule
-        & & \multicolumn{2}{c}{Nested goals} & \multicolumn{2}{c}{Deep goals} \\
-        \cmidrule(lr){3-4} \cmidrule(lr){5-6}
-        Protection & Record & Solved (\%) & Node ratio & Solved (\%) & Node ratio \\
-        \midrule
-        Off  & Scoped & 79.4 [77.3, 81.4] & 0.89 [0.87, 0.90] & 73.0 [70.6, 75.2] & 1.43 [1.40, 1.45] \\
-             & Global & 58.0 [56.3, 59.6] & 3.31 [3.22, 3.41] & 42.3 [40.8, 43.7] & 8.96 [8.69, 9.23] \\
-        \midrule
-        Left & Scoped & 91.8 [90.8, 92.8] & 1.27 [1.24, 1.29] & 81.8 [80.3, 83.3] & 2.55 [2.50, 2.61] \\
-             & Global & 91.8 [90.8, 92.8] & 1.74 [1.70, 1.78] & 81.2 [79.7, 82.7] & 3.60 [3.52, 3.68] \\
-        \bottomrule
-      \end{tabular}
-    \end{table}
-
-    % Without protection
-    Without protection the global rule is badly incomplete.
-    It solves 58.0\% of solvable states on nested goals and 42.3\% on deep goals, against 79.4\% and 73.0\% for the scoped tree (Table~\ref{tab:scope_comparison}), missing about twice as many solvable states on both goal shapes.
-    Its trees are far smaller, 3.7 and 6.3 times smaller than the scoped trees, because a condition expanded in one branch is never expanded again in another and its copies elsewhere remain leaves.
-
-    % With protection
-    With left protection the difference all but disappears.
-    On nested goals the two rules solve exactly the same states on every one of the thousand problems.
-    On deep goals the scoped rule solves 0.6 points more, but the 95\% interval on that difference runs from $-0.1$ to $1.2$ points and includes zero, so no difference in coverage is established.
-    The global trees remain smaller, by a factor of 1.37 on nested goals and 1.41 on deep goals.
-    Neither global tree under left protection returned a false success or reached a violation on any problem.
-
-    % Why protection makes the global rule safe
-    A further global arm under left protection uses a record key that ignores the protect set, while protection still filters actions (Section~\ref{subsec:pruning_comparison}).
-    Its coverage falls to 65.8\% on nested goals and 49.2\% on deep goals, against 91.8\% and 81.2\% for the global arm with the full key, most of the way to the unprotected values of 58.0\% and 42.3\%.
-    This confirms the mechanism of Section~\ref{subsec:pruning_and_protect}, that protection makes the global rule safe through the key of the expansion record rather than through the actions it rejects.
-
-    % Order dependence
-    The scoped record also determines the tree independently of expansion order.
-    On a thousand flat goals built from the same problems, the scoped tree matched the reference in node count and region of attraction on every one, while the global tree depends on which branch is expanded first.
-
     \subsection{Validity of the Sweep}
     \label{subsec:interference_validity}
     % Harness check
-    No member of any arm, including the global arms of Section~\ref{subsec:results_pruning}, lies outside the solvable states, so every arm's region lies within the reference's and preservation measures loss alone.
+    No member of any arm lies outside the solvable states, so every arm's region lies within the reference's and preservation measures loss alone.
+    On the thousand flat goals built from the nested problems, the unified tree matched the reference in node count and region of attraction on every one, as Section~\ref{sec:equivalence} predicts.
 
     % How far the rates generalise
     Interference in these problems is frequent by design.
@@ -242,22 +194,17 @@
 \section{Simulation Demonstration}
 \label{sec:results_sim}
     % What this section shows
-    The experiments of Sections~\ref{sec:results_compactness} and~\ref{sec:results_interference} measured fixpoint trees offline, where every action finished in one tick and every literal was written by an action.
-    This section runs the unified construction on the simulated robot of Section~\ref{sec:sim_harness}, where neither holds and the tree is expanded while the robot executes it.
-    It is a demonstration on a single task, and its purpose is to show that the construction and its guarantees carry over to this setting.
+    This section runs the unified construction online on the harness of Section~\ref{sec:sim_harness}, where the tree is expanded while the robot executes it.
+    It is a single run, and its purpose is to show that the construction and its guarantees carry over to actions that span many ticks and literals that come from perception.
 
-    \subsection{Task and Setup}
-    \label{subsec:sim_setup}
     % The task
-    The robot starts at the hub's goal pose in the world of Figure~\ref{fig:sim_world} with an empty gripper.
     The task is to scan a package in the hub and leave it in either bin.
-    The initial state is $\{\texttt{at\_B}, \texttt{empty}\}$ and the goal is
+    The robot starts at the hub's goal pose with an empty gripper, so the initial state is $\{\texttt{at\_B}, \texttt{empty}\}$, and the goal is
     \begin{equation}
         g = \texttt{scanned} \wedge (\texttt{box\_at\_A} \vee \texttt{box\_at\_C}).
         \label{eq:sim_goal}
     \end{equation}
-    Table~\ref{tab:sim_actions} lists the seven actions together with the Nav2 server that carries out each one.
-    Scanning is a full rotation in place, and loading and unloading are timed waits that stand in for a manipulator.
+    The settings of the run are given in Table~\ref{tab:settings}.
 
     \begin{table}[htbp]
         \centering
@@ -302,37 +249,24 @@
         \end{tabular}
     \end{table}
 
+    % Impossible conditions
+    % TODO: confirm expansion numbers after the BFS rerun
+    Expansions~6 and~7 produced conditions that can never hold, such as $\{\texttt{at\_B}, \texttt{at\_C}, \texttt{empty}\}$, which places the robot in two rooms at once.
+    The STRIPS description cannot state that the room literals exclude one another, so expansion cannot tell such conditions from satisfiable ones, and their only cost was two expansions.
+    Detecting such invariants from the action descriptions is left to future work (Chapter~\ref{ch:conclusion}).
+
     % Expansion narrative
     Execution began after a single expansion.
-    Expanding \texttt{scanned} placed \texttt{scan} under the precondition \texttt{at\_B}, which held in the hub, so the next tick started the scan.
-    The robot rotated in place while the tree reported RUNNING, and no further expansion took place until the scan succeeded.
-    With \texttt{scanned} holding, the \texttt{GoalSequence} passed to the \texttt{GoalSelector}, both of whose disjuncts failed, and expansions~2 to~8 followed on consecutive ticks.
-    Expansion~8 gave the C branch a route whose precondition $\{\texttt{at\_B}, \texttt{empty}\}$ held, so the tree started \texttt{load} and expansion stopped.
-    The load started 0.01\,s of simulation time after the scan ended, so the seven expansions between the two actions took a negligible share of the run.
+    Expanding \texttt{scanned} placed \texttt{scan} under the precondition \texttt{at\_B}, which held in the hub, so the next tick started the scan, and no further expansion took place while it ran.
+    Once \texttt{scanned} held, both disjuncts failed, and the remaining expansions followed on consecutive ticks until the branch for room~C had a route whose precondition $\{\texttt{at\_B}, \texttt{empty}\}$ held.
+    Those expansions took 0.01\,s of simulation time between the end of the scan and the start of \texttt{load}.
 
     % Execution narrative
-    Table~\ref{tab:sim_timeline} lists the actions in the order they ran.
+    % TODO: update times and room after the rerun
     After loading, the robot drove toward room~C.
-    Once it entered the rectangle of room~C, the observer replaced \texttt{at\_B} with \texttt{at\_C}, and the condition $\{\texttt{at\_C}, \texttt{full}\}$ above the move held.
-    On the next tick the tree halted the move and started \texttt{unload\_C} where the robot stood.
+    The observer wrote \texttt{at\_C} as the robot entered the room, before it reached the goal pose, and the tree halted the move and started \texttt{unload\_C} where the robot stood (Section~\ref{subsec:sim_perception_literals}).
+    The goal held 42.88\,s after the first tick, 26.10\,s of which was the move.
     Figure~\ref{fig:sim_tree} shows the tree at the end of the run.
-
-    % TODO: Maybe delete table
-    \begin{table}[htbp]
-        \centering
-        \caption[Execution timeline of the simulation run]{Execution timeline of the simulation run in simulation time, measured from the first tick. The move to room~C was halted by the tree when the robot entered the room, before it reached the goal pose.}
-        \label{tab:sim_timeline}
-        \begin{tabular}{@{}lrrl@{}}
-            \toprule
-            Action & Start (s) & End (s) & Ended by \\
-            \midrule
-            \texttt{scan}      &  0.00 &  6.69 & success \\
-            \texttt{load}      &  6.70 & 11.74 & success \\
-            \texttt{move\_C}   & 11.74 & 37.84 & halted \\
-            \texttt{unload\_C} & 37.84 & 42.88 & success \\
-            \bottomrule
-        \end{tabular}
-    \end{table}
 
     \begin{figure}[htbp]
         \centering
@@ -351,13 +285,6 @@
     % Protection was inert
     Protection filtered no actions during the run.
     No action of Table~\ref{tab:sim_actions} deletes \texttt{scanned}, \texttt{box\_at\_A} or \texttt{box\_at\_C}, so the conjuncts of~\eqref{eq:sim_goal} cannot undo one another.
-
-    \subsection{Observations}
-    \label{subsec:sim_observations}
-    % Impossible conditions
-    Expansions~6 and~7 produced conditions that can never hold, such as $\{\texttt{at\_B}, \texttt{at\_C}, \texttt{empty}\}$, which places the robot in two rooms at once.
-    The STRIPS description cannot state that the room literals exclude one another, so expansion cannot tell such conditions from satisfiable ones, and their only cost was two expansions.
-    Detecting such invariants from the action descriptions is left to future work (Chapter~\ref{ch:conclusion}).
  
 \section{Discussion}
 \label{sec:results_discussion}
@@ -373,7 +300,6 @@
     \label{subsec:discussion_guarantees}
     % Condition (ii)
     Condition~\ref{cond:status} holds for the unified construction under left protection by Proposition~\ref{prop:left_soundness}, and no measured problem contradicted it (Section~\ref{subsec:interference_outcomes}).
-    This includes the trees built with a global expansion record (Section~\ref{subsec:results_pruning}), as the proposition predicts, since its proof does not depend on how the record is scoped.
     Without protection the condition fails.
 
     % Condition (i)
@@ -410,7 +336,7 @@
     \label{subsec:discussion_conjuncts}
     % Flat goals
     On flat goals there is nothing to factor.
-    The two constructions build the same tree with the same region of attraction (Section~\ref{sec:equivalence}), which held on every flat goal measured (Section~\ref{subsec:results_pruning}).
+    The two constructions build the same tree with the same region of attraction (Section~\ref{sec:equivalence}), which held on every flat goal measured (Section~\ref{subsec:interference_validity}).
 
     % Independent conjuncts
     When the conjuncts of a goal can be regressed independently, the unified tree is smaller and loses nothing, since it regresses through the literal space rather than the state space (Section~\ref{subsec:compactness_closed_forms}).
@@ -448,7 +374,3 @@
     The proof of Proposition~\ref{prop:left_soundness} needs only the actions beneath later siblings to be restricted, since an action that deletes a literal a later sibling needs runs before that sibling is ticked, which then achieves the literal again or fails.
     The further deletions symmetric protection forbids therefore prevent no violation, and they account for the solvable states it misses beyond those left protection misses.
     Symmetric protection also guards against siblings undoing each other indefinitely, but no cycle occurred under left protection.
-
-    % Scoping
-    Scoping of the expansion record and of pruning is kept.
-    Under left protection it enlarges the tree by about 40\% and costs no measured coverage (Section~\ref{subsec:results_pruning}), and in exchange the tree does not depend on expansion order (Section~\ref{subsec:pruning_scopes}).

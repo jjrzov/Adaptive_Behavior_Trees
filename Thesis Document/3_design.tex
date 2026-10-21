@@ -373,7 +373,6 @@
     Under left protection, every condition beneath a later child of a \texttt{GoalSequence} carries the goal literals of its earlier siblings, so conditions beneath different children carry different protect sets and never share an entry.
     Protection therefore separates the siblings of a \texttt{GoalSequence} in the record as well as in action selection.
     With protection off the protect sets are all empty, and only the branch scope of Section~\ref{subsec:pruning_scopes} keeps the children apart.
-    Section~\ref{subsec:results_pruning} measures what each of these separations is worth.
  
     \subsection{Pruning Scopes}
     \label{subsec:pruning_scopes}
@@ -391,14 +390,10 @@
     The resulting tree is no longer the closure of each branch, so the order independence of Section~\ref{subsec:order_independence} fails, and the flat goal no longer yields the DNF tree of Section~\ref{sec:equivalence}.
     Under scoped pruning each branch keeps its own route through $M$.
  
-    % Severing can also cost states
-    Global pruning can also cost region of attraction.
-    The effect is not visible in the example above, where the pruned structure is a single step and the surviving branch applies wherever the pruned one did.
-    Once branches regress through chains of overlapping conditions, pruning may remove a link in a chain rather than a redundant alternative, and a state from which only the removed chain led to the goal is lost.
- 
     % Decision
     Pruning is therefore scoped in the construction, so that each branch is expanded to its own closure whatever order the branches are visited in.
-    Section~\ref{subsec:results_pruning} measures the cost of that choice in tree size relative to the global rule.
+    The choice costs tree size, since a global record expands a condition shared by several branches only once.
+    It is not needed for soundness, since the proof of Proposition~\ref{prop:left_soundness} does not depend on how the record is scoped.
  
     % Relating the pruning scope back to the overall design
     Both operators of the goal grammar break an inherited mechanism in the same way.

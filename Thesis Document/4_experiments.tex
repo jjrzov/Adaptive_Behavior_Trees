@@ -25,7 +25,7 @@
 
     A deep goal adds a second disjunction alongside the first, so a DNF compilation enumerates four sub-goals rather than two when each disjunction is binary.
 
-    A flat goal, in which the shared conjunct is written into every disjunct rather than factored out, is used only to check the equivalence of Section~\ref{sec:equivalence} (Section~\ref{subsec:pruning_comparison}).
+    A flat goal, in which the shared conjunct is written into every disjunct rather than factored out, is used only to check the equivalence of Section~\ref{sec:equivalence} (Section~\ref{subsec:soundness_and_preservation_sweep}).
 
     \subsection{Randomly Generating Problems}
     \label{subsec:random_generator}
@@ -149,7 +149,7 @@
     Two structurally identical conditions therefore share a key, and a condition is eligible for expansion only if its scope is not yet in that key's set.
     
     % Feature flags
-    Protection mode, pruning scope, and subset pruning are set per experiment (Section~\ref{sec:configuration}).
+    Protection mode and subset pruning are set per experiment (Section~\ref{sec:configuration}).
     
 \section{Building Fixpoint Trees}
 \label{sec:fixpoint}
@@ -264,8 +264,8 @@
 \label{sec:sim_harness}
     % Scope of the ROS development
     The simulation harness runs the planner on a simulated robot with a navigation stack.
-    It provides three things the synthetic harness cannot, namely actions that occupy time across many ticks, and  literals derived from perception rather than written by actions.
-    It is a demonstration rather than an evaluation, so it tests no proposition and reports no quantity.
+    It provides two things the synthetic harness cannot, namely actions that occupy time across many ticks and literals derived from perception rather than written by actions.
+    The run on this harness is a demonstration rather than an evaluation, so it tests no proposition and reports no quantity (Section~\ref{sec:results_sim}).
 
     \subsection{The Simulated World}
     \label{subsec:sim_world}
@@ -319,11 +319,9 @@
 
     \subsection{ROS Trees}
     \label{subsec:sim_ros_trees}
-    % TODO: define a disturbance in background
     % How the tree is implemented in ROS
-    The simulated tree is built with \texttt{py\_trees\_ros}, which adapts \texttt{py\_trees} to behavior trees running inside ROS~2 nodes.
     Each iteration of the runner services ROS callbacks and then ticks the tree, so the blackboard reflects the most recent perception before the tree acts on it.
-    The runner loops without terminating, so a disturbance arriving at any point is acted on, including after the goal has been reached.
+    The runner loops without terminating, so ticking continues after the goal has been reached.
 
     % Interleaved expansion
     The tree starts as the base tree of the goal and grows while it runs.
@@ -332,27 +330,37 @@
     Expansion and execution therefore interleave on the same tree.
     The runner also evaluates the goal against the world state on every tick, independently of the tree, and counts a false success whenever the root reports SUCCESS while the goal does not hold.
 
-    \subsection{Literals from Perception}
+    \subsection{Perception and Actions}
     \label{subsec:sim_perception_literals}
+    \phantomsection\label{subsec:sim_nav2_actions}
     % Literal states come from perception
     The room literals are maintained by a background \texttt{PoseObserver} node rather than by the actions.
-    The observer classifies the localized pose into the room whose rectangle contains it.
+    The observer classifies the localized pose into the room whose rectangle contains it, which makes it a hand-built grounding of the room literals \cite{konidaris2018}.
     The rectangles are inset from the walls, so a pose in a doorway falls in no rectangle and leaves the last room literal in place.
     The gap between rectangles therefore acts as hysteresis, and a pose near a boundary does not alternate between rooms.
     Every other literal is written by the action that adds or deletes it, in the same update in which that action returns SUCCESS, as in the synthetic harness.
 
-    % Inversion and early effects
-    For the room literals this inverts the arrangement of the synthetic harness, where the action that moves the robot also writes the literal.
-    Here an action triggers motion and a separate observer reports what resulted, so the tree acts on what perception reports rather than on what the action intended.
-    Because the observer runs independently of the tree, it can write a room literal while a move toward that room is still running, as soon as the robot enters the room's rectangle.
-    Such an update reaches the tree between ticks, like any other change to the world state.
-
-    \subsection{Nav2 Actions}
-    \label{subsec:sim_nav2_actions}
     % Actions with Nav2
-    Every action is carried out by a Nav2 server.
-    A move action sends a NavigateToPose goal for the target room's goal pose, and actions without travel use the Spin and Wait behavior servers.
-    While its server is working the action returns RUNNING, so it remains running across many ticks rather than resolving within the tick that started it.
+    Table~\ref{tab:sim_actions} gives the action database together with the Nav2 server that carries out each action.
+    Scanning is a full rotation in place, and loading and unloading are timed waits that stand in for a manipulator.
+    While its server is working an action returns RUNNING, so it remains running across many ticks rather than resolving within the tick that started it.
+
+    \begin{table}[htbp]
+        \centering
+        \caption[Action database of the simulation harness]{Action database of the simulation harness and the Nav2 server that carries out each action. The move actions for the three rooms share one schema, with $X$ the target room and $Y, Z$ the other two.}
+        \label{tab:sim_actions}
+        \begin{tabular}{@{}lllll@{}}
+            \toprule
+            Action & Preconditions & Add & Delete & Carried out by \\
+            \midrule
+            \texttt{scan}       & \texttt{at\_B}                 & \texttt{scanned}                  & ---            & Spin, $2\pi$ \\
+            \texttt{load}       & \texttt{empty}, \texttt{at\_B} & \texttt{full}                     & \texttt{empty} & Wait, 5\,s \\
+            \texttt{unload\_A}  & \texttt{full}, \texttt{at\_A}  & \texttt{box\_at\_A}, \texttt{empty} & \texttt{full}  & Wait, 5\,s \\
+            \texttt{unload\_C}  & \texttt{full}, \texttt{at\_C}  & \texttt{box\_at\_C}, \texttt{empty} & \texttt{full}  & Wait, 5\,s \\
+            \texttt{move\_$X$}  & ---                            & \texttt{at\_$X$}                  & \texttt{at\_$Y$}, \texttt{at\_$Z$} & NavigateToPose \\
+            \bottomrule
+        \end{tabular}
+    \end{table}
 
     % Gating on the observed literal
     Proposition~\ref{prop:left_soundness} assumes that an action's effects hold once it returns SUCCESS.
@@ -360,22 +368,19 @@
     A move action does not write its room literal, so it returns SUCCESS only once Nav2 reports the goal pose reached and the observer has written the target room literal.
     Without that gate it could report SUCCESS on Nav2's result before its effect was in the world state.
 
-    % Halting and early effects
-    An action stops being ticked once the condition above it holds.
-    For a move this happens either when it succeeds or when the observer writes the target literal early (Section~\ref{subsec:sim_perception_literals}).
-    In the second case the tree halts the move on the next tick, which cancels its navigation goal.
-    The early update arrives between ticks, and Proposition~\ref{prop:left_soundness} holds in every state the tree is ticked in, so an early effect cannot cause a false success.
-
-    % What if the action fails?
-    An action that fails during execution causes an expansion before the next tick, since the runner does not distinguish execution failure from the absence of an applicable action.
+    % Early effects
+    Because the observer runs independently of the tree, it can write a room literal while a move toward that room is still running, as soon as the robot enters the room's rectangle.
+    The update reaches the tree between ticks, like any other change to the world state.
+    On the next tick the condition above the move holds, so the tree halts the move and cancels its navigation goal.
+    Proposition~\ref{prop:left_soundness} holds in every state the tree is ticked in, so an early effect cannot cause a false success.
 
 \section{Experiment Configuration}
 \label{sec:configuration}
     % TODO Revise entire section once results is done
     % The point of this section
     Every figure reported in Chapter~\ref{ch:results} comes from a named configuration of the procedures described in this chapter.
-    Three synthetic experiments are reported, the construction comparison, the soundness sweep, and a comparison of expansion scopes, together with the simulation demonstration.
-    The three synthetic experiments share the planner implementation, the fixpoint construction, and the membership test, and differ only in the arms they compare and the settings listed here.
+    Two synthetic experiments are reported, the compactness sweep and the soundness sweep, together with the simulation demonstration.
+    The two synthetic experiments share the planner implementation, the fixpoint construction, and the membership test, and differ only in the arms they compare and the settings listed here.
 
     \subsection{Reference Arm}
     \label{subsec:reference_arm}
@@ -424,66 +429,38 @@
 
     Problems come from the randomized generator, so interference arises at whatever rate the sampler produces rather than being set.
     Nested and deep goals are run as separate samples of one thousand admissible problems each, admitted under the subsumption check of Section~\ref{subsubsec:disjunct_selection} alone.
-    A flat goal places no \texttt{GoalSequence} in the tree, so it has no sibling goals to protect and every protection mode would produce the same tree.
-
-    \subsection{Scoped and Global Expansion}
-    \label{subsec:pruning_comparison}
-    % What does this test cover?
-    The scope comparison measures the scoped expansion record and pruning of Section~\ref{subsec:pruning_scopes} against the global rule of \cite{cai2021}.
-    It reuses the problems of the soundness sweep, one thousand nested and one thousand deep goals, so its scoped arms are the unified arms of that sweep.
-    Each problem is built again under the global rule, once with protection off and once against left siblings, and scored against the same DNF reference.
- 
-    The global arms are built by a parallel loop that shares one record of expanded conditions across branches and applies the unscoped pruning test.
-    That loop also expands until no unexpanded condition remains, so the scoped and global arms are expanded to the same degree.
-    Subset pruning is enabled in every arm.
-    The membership outcomes and tree size are recorded for each arm, together with the states it solves that the reference does not and the reverse.
- 
-    Two further checks isolate the mechanisms of Section~\ref{sec:pruning}.
-    The global arm under left protection is rebuilt with a record key that ignores the protect set, while protection still filters actions, which separates the effect of the key from the effect of the actions protection rejects.
-    A flat goal is also built from each nested problem by writing the shared conjunct into both disjuncts, and its scoped tree is compared with the DNF reference in node count and region of attraction.
-
-    \subsection{Simulation Demonstration}
-    \label{subsec:sim_configuration}
-    % What is configured for the demonstration
-    The simulation demonstration runs once, on a single task, under the tick-driven loop of Section~\ref{subsec:sim_ros_trees} rather than to a fixed point, so its tree depends on the state the robot starts in.
-    Its task and settings are given with the run in Section~\ref{subsec:sim_setup}.
+    A flat goal places no \texttt{GoalSequence} in the tree, so every protection mode would produce the same tree, and flat goals serve only to check the equivalence of Section~\ref{sec:equivalence}.
+    A flat goal is built from each nested problem by writing the shared conjunct into both disjuncts, and its unified tree is compared with the DNF reference in node count and region of attraction.
 
     \subsection{Experiment Settings}
     \label{subsec:settings}
     % TODO: Scoped BFS define it
-    \begin{table}[htbp]
-        \centering
-        \caption{Configuration of each experiment.}
-        \label{tab:settings}
-        \small
-        \begin{tabular}{llll}
+    \begin{tabular}{llll}
         \toprule
-        & Soundness & Compactness & Scope \\
+        & Soundness & Compactness & Simulation \\
         \midrule
         \multicolumn{4}{l}{\emph{Problem}} \\
-        Source              & Randomized           & Layered              & Randomized \\
-        Goal shape          & Nested, deep         & Nested               & Flat, nested, deep \\
-        Generator           & $10/10/10$           & ---                  & $10/10/10$ \\
-        Admission checks    & Subsumption          & ---                  & Subsumption \\
-        Swept               & ---                  & $d$, $m$, $k$        & --- \\
-        Base values         & ---                  & $d{=}3$, $m{=}2$, $k{=}2$ & --- \\
+        Source              & Randomized                & Layered                   & Hand-written \\
+        Goal shape          & Nested, deep, flat        & Nested                    & Nested \\
+        Generator           & $10/10/10$                & ---                       & --- \\
+        Admission checks    & Subsumption               & ---                       & --- \\
+        Swept               & ---                       & $d$, $m$, $k$             & --- \\
+        Base values         & ---                       & $d{=}3$, $m{=}2$, $k{=}2$ & --- \\
         \midrule
         \multicolumn{4}{l}{\emph{Construction}} \\
-        Arms                & Off, left,           & Unified, DNF         & Scoped and global, \\
-                            & symmetric, DNF       &                      & each off and left \\
-        Reference           & DNF                  & DNF                  & DNF \\
-        Protection          & Off, left, symmetric & Off, inert           & Off, left \\
-        Pruning             & Scoped               & Scoped               & Scoped, global \\
-        Subset pruning      & Enabled              & Enabled              & Enabled \\
-        Traversal           & Scoped BFS           & Scoped BFS           & Scoped BFS, BFS \\
+        Arms                & Off, left, symmetric, DNF & Unified, DNF              & Unified \\
+        Reference           & DNF                       & DNF                       & --- \\
+        Expansion           & Fixpoint                  & Fixpoint                  & Online \\
+        Protection          & Off, left, symmetric      & Off, inert                & Left \\
+        Pruning             & Scoped                    & Scoped                    & Scoped \\
+        Subset pruning      & Enabled                   & Enabled                   & Enabled \\
+        Traversal           & Scoped BFS                & Scoped BFS                & Scoped BFS \\
         \midrule
         \multicolumn{4}{l}{\emph{Run}} \\
-        Problems            & 1000 per shape       & 20 configurations    & 1000 per shape\\
-        Tick cap            & 100                  & 100                  & 100 \\
-        Seed                & 0                    & Deterministic        & 0 \\
+        Problems            & 1000 per shape            & 20 configurations         & 1 run \\
+        Tick cap            & 100                       & 100                       & --- \\
+        Seed                & 0                         & Deterministic             & --- \\
         \bottomrule
-        \end{tabular}
-    \end{table}
+    \end{tabular}   
 
     The randomized generator is configured with ten literals, a distance of ten, and ten branching iterations, which is the configuration of \cite{cai2021}.
-    The soundness sweep and the scope comparison share their problems.
