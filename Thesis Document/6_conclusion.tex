@@ -1,0 +1,7 @@
+\chapter{Conclusion}
+\label{ch:conclusion}
+    The choice between the constructions could be made before either tree is built.
+    For each sibling of a \texttt{GoalSequence}, relevance analysis over the action database over-approximates the actions and literals its subtree could contain, starting from the sibling's goal literals and adding the actions that achieve or require them until nothing new is added.
+    If no action relevant to one sibling deletes a literal relevant to another, the unified tree is expected to cover every state DNF compilation covers.
+    Where the condition fails, the interacting siblings could be merged back into a single condition regressed jointly while the independent ones stay factored.
+    Proving that the condition suffices and evaluating the merged construction remain open.

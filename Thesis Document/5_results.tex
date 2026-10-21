@@ -276,12 +276,6 @@
         \end{tabular}
     \end{table}
 
-    % Measured costs and settings
-    The measured path lengths were 12.89\,m from the hub to room~A and 9.21\,m to room~C, so room~C is the cheaper bin.
-    Room~A is the first child of the \texttt{GoalSelector} and would be chosen on a tie, so a delivery to room~C can follow only from the measured costs.
-    The remaining actions carry fixed costs from the action database. % TODO revisit once cost units are settled
-    The run used the Nav2 actions, scoped cheapest-first traversal, left protection, and scoped subset pruning.
-
     \subsection{Online Expansion and Execution}
     \label{subsec:sim_run}
     % TODO: update both tables and the narrative after the rerun
@@ -364,12 +358,6 @@
     Expansions~6 and~7 produced conditions that can never hold, such as $\{\texttt{at\_B}, \texttt{at\_C}, \texttt{empty}\}$, which places the robot in two rooms at once.
     The STRIPS description cannot state that the room literals exclude one another, so expansion cannot tell such conditions from satisfiable ones, and their only cost was two expansions.
     Detecting such invariants from the action descriptions is left to future work (Chapter~\ref{ch:conclusion}).
-
-    % Why room C
-    The robot delivered to room~C, the cheaper bin, but the measured costs did not decide it.
-    Expanding a condition places its subtree first among its parent's children, so after expansion~3 room~C was the first child of the \texttt{GoalSelector} (Appendix~\ref{app:selector_order}).
-    Both branches regress through the same \texttt{load} action, so once the package was loaded the unexpanded condition \texttt{full} above each move held, and the selector ran the first child whose route could now run.
-    The measured costs therefore decided the order in which conditions were expanded, while the bin followed the order of the selector's children, which follows the order of expansion rather than cost.
  
 \section{Discussion}
 \label{sec:results_discussion}
@@ -464,4 +452,3 @@
     % Scoping
     Scoping of the expansion record and of pruning is kept.
     Under left protection it enlarges the tree by about 40\% and costs no measured coverage (Section~\ref{subsec:results_pruning}), and in exchange the tree does not depend on expansion order (Section~\ref{subsec:pruning_scopes}).
-    The cost-aware traversal of the simulation harness relies on the same property, since a global record can remove the route of the cheaper disjunct before that route is ever costed.

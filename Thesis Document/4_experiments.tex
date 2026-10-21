@@ -264,7 +264,7 @@
 \label{sec:sim_harness}
     % Scope of the ROS development
     The simulation harness runs the planner on a simulated robot with a navigation stack.
-    It provides three things the synthetic harness cannot, namely actions that occupy time across many ticks, literals derived from perception rather than written by actions, and action costs measured from path planning.
+    It provides three things the synthetic harness cannot, namely actions that occupy time across many ticks, and  literals derived from perception rather than written by actions.
     It is a demonstration rather than an evaluation, so it tests no proposition and reports no quantity.
 
     \subsection{The Simulated World}
@@ -273,7 +273,6 @@
     The simulated world runs in Gazebo and contains three rooms, shown in Figure~\ref{fig:sim_world}.
     Room~B is a hub that spans the right side of the building, and rooms~A and~C are reached from it through one door each.
     Each room is described by a goal pose for navigation and a rectangle used to classify the robot's pose into that room (Section~\ref{subsec:sim_perception_literals}).
-    The hub's goal pose is offset toward the door of room~C, so the path from the hub to room~C is shorter than the path to room~A.
     The robot spawns at the hub's goal pose.
 
     \begin{figure}[htbp]
@@ -369,26 +368,6 @@
 
     % What if the action fails?
     An action that fails during execution causes an expansion before the next tick, since the runner does not distinguish execution failure from the absence of an applicable action.
-
-    \subsection{Costs and Traversals}
-    \label{subsec:sim_costs_and_traversals}
-    % Costs from path planning
-    Once a disjunction offers alternatives that both lead to success, the alternatives need not be equally expensive.
-    A \texttt{CostMapping} routine measures move costs at startup by asking the Nav2 planner for a path between the goal poses of each pair of rooms and recording its length.
-    Each pair is measured once and the length is used in both directions.
-    The cost of a move is the length from the room the robot currently occupies to the target room, and every other action carries a fixed cost from the action database.
-
-    % Cost composition
-    % TODO: IMAGE of a tree with its costs and showing the costs as it goes up the tree
-    With non-unit costs, the next condition to expand can be chosen by what it costs to reach rather than by how shallowly it sits.
-    The cost of a subtree is composed from the costs beneath it.
-    An action contributes its own cost and an unexpanded condition contributes zero.
-    A sequence contributes the sum of its children, since all of them must succeed, and a selector contributes the minimum, since only one of them need succeed.
-    Goal-structure nodes compose in the same way, so a \texttt{GoalSequence} sums and a \texttt{GoalSelector} takes the minimum.
-
-    % Traversal
-    Cheapest-first traversal expands the unexpanded condition whose composed cost is lowest, and a tie goes to the earlier child of a selector.
-    Its scoped form uses the scoped expansion record of Section~\ref{sec:unified_construction}, so a condition expanded in one branch of a \texttt{GoalSelector} remains expandable in another.
 
 \section{Experiment Configuration}
 \label{sec:configuration}
@@ -508,4 +487,3 @@
 
     The randomized generator is configured with ten literals, a distance of ten, and ten branching iterations, which is the configuration of \cite{cai2021}.
     The soundness sweep and the scope comparison share their problems.
-    Every synthetic action carries a unit cost, which the breadth-first traversals never read, so measured costs enter only the simulation (Section~\ref{subsec:sim_costs_and_traversals}).
