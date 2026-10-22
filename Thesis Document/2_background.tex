@@ -202,6 +202,12 @@
         Given $\langle S, A, \mathcal{T}, s_0, g \rangle$, where $S$ is a finite set of states, $A$ a finite set of actions, $\mathcal{T}$ the behavior tree of the robot, $s_0$ the initial state, and $g$ a goal condition, build a BT $\mathcal{T}_s$ with actions from $A$ such that $\mathcal{T}_s$ is finite time successful with region of attraction $R' \ni s_0$, and every state $s$ in its success region satisfies $g \subseteq s$.
     \end{problem}
 
+    % Expressiveness of the goal
+    The goal of \probone is a single condition.
+    Requiring two conditions together is again a condition, the set holding every literal of both, so \probone expresses any conjunction of literals.
+    It cannot in general express a choice between two conditions $c_1$ and $c_2$, since no single set of literals holds in exactly the states where $c_1$ or $c_2$ holds.
+    A planner restricted to \probone must therefore treat each alternative as a separate problem, as the successors of Section~\ref{chen2024_section} do.
+
      % Action model
     Actions follow the STRIPS model of Section~\ref{subsec:tp_classical}, with $add(a) \cap del(a) = \emptyset$ and $add(a) \cap pre(a) = \emptyset$.
     While an action runs, its preconditions are assumed to keep holding, it finishes in finite time, and its effects \eqref{eq:strips_transition} take place only at the tick on which it returns SUCCESS.

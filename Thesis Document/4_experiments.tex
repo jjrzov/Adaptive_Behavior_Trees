@@ -4,6 +4,7 @@
     The same planner runs in two environments.
     A synthetic harness generates planning problems at scale and is where the correctness and structural measurements are taken, and a simulated robot on ROS~2 is where the planner drives real motion (Section~\ref{sec:sim_harness}).
     The planner is the same code in both, so what the simulation exercises is the construction itself rather than a separate implementation of it.
+    Expansion builds each action node through a function supplied by the environment, and that function is the only point at which the two settings differ.
 
 \section{Problem Generation}
 \label{sec:problem_generator}
@@ -25,7 +26,7 @@
 
     A deep goal adds a second disjunction alongside the first, so a DNF compilation enumerates four sub-goals rather than two when each disjunction is binary.
 
-    A flat goal, in which the shared conjunct is written into every disjunct rather than factored out, is used only to check the equivalence of Section~\ref{sec:equivalence} (Section~\ref{subsec:soundness_and_preservation_sweep}).
+    A flat goal, in which the shared conjunct is written into every disjunct rather than factored out, is used only to check the equivalence of Section~\ref{sec:equivalence} (Section~\ref{subsec:soundness_sweep}).
 
     \subsection{Randomly Generating Problems}
     \label{subsec:random_generator}
@@ -44,9 +45,9 @@
 
     \subsubsection{Selecting Disjuncts}
     \label{subsubsec:disjunct_selection}
-    % Review what disjuncts are
-    A disjunct is an operand of a disjunction, so a goal with a single \pred{OR} offers the tree a choice between two disjuncts.
-    Disjuncts are drawn from the states along the generated path rather than constructed independently of it, so every disjunct is satisfiable in at least one reachable state.
+    \phantomsection\label{subsubsec:reproducibility}
+    % Where disjuncts come from
+    Disjuncts are drawn from the states along the generated path rather than constructed independently of it, so every operand is satisfiable in at least one reachable state.
 
     % How each goal shape is drawn
     A nested goal is drawn from two distinct path states.
@@ -55,30 +56,19 @@
     The remainder of each subset is then split in half, giving one operand to each of the two disjunctions.
     A draw is discarded when the shared conjunct or any operand is empty, since the goal would then lack the structure its shape requires.
 
-    % Subsumption
-    A draw is also rejected when one operand of a disjunction contains the other.
-    The disjunction is then equivalent to the smaller operand alone and offers no genuine alternative, so the goal would reduce to a simpler shape.
-
-    % Why the initial state is not checked
+    % Rejected draws
+    A draw is also rejected when one operand of a disjunction contains the other, since the disjunction is then equivalent to the smaller operand and offers no genuine alternative.
     No draw is rejected for holding in the initial state, since the initial state plays no role in a fixpoint tree or its measurement (Section~\ref{sec:fixpoint}).
 
-    Selection is attempted a limited number of times, and a pool that yields no admissible goal is discarded along with the problem built from it.
+    % Rejected problems
+    The generator rejects a problem when one of its disjuncts is satisfiable in no reachable state.
+    It decides this from the action database alone, with a forward search from every pooled state at once that applies every applicable action until no new state appears, and it counts a disjunct as satisfiable if its literals are a subset of some reached state.
+    The rule matters most for a deep goal, whose disjuncts combine operands of two disjunctions with nothing guaranteeing that a combination is jointly reachable.
+    Without it, a goal could be disjunctive in form while offering only one viable route, and a construction would appear to preserve every reachable state while one of its branches was never viable.
 
-    \subsubsection{Admissibility and Reproducibility}
-    \label{subsubsec:reproducibility}
-    % When problems are rejected
-    A problem is rejected when one of its disjuncts is satisfiable in no reachable state.
-    This is tested using only the action database and no tree.
-    A forward search runs from every state in the pool at once, applying every action whose preconditions hold until no new state is reached, and a disjunct counts as solvable if its literals are a subset of any state the search reaches.
-    The rule matters most for a deep goal, whose disjuncts are combinations of two operands with nothing guaranteeing that a given combination is jointly reachable, so a goal may be disjunctive in form while offering only one viable route.
-    Retaining it would report a construction as preserving every reachable state while one of its branches was never viable.
-
-    Generation is not guaranteed to succeed on a given attempt.
-    The randomized generator may produce a pool from which no admissible goal can be factored, in which case the attempt is discarded and another is made.
-    Problems are drawn until a target count of admissible problems is reached rather than by making a fixed number of attempts, so the reported sample size is the number of problems measured.
-
-    % Are random generator problems reproducable?
-    Every run draws from a single seed fixed for the experiment, so reported results are reproducible from the seed and the configuration (Section~\ref{sec:configuration}) alone.
+    % Retries and reproducibility
+    When a pool yields no admissible goal, the generator discards it and tries again, so problems are drawn until a target count is reached and the reported sample size is the number of problems measured.
+    Every run draws from a single seed fixed for the experiment, so the results are reproducible from the seed and the configuration (Section~\ref{sec:configuration}).
 
     \subsection{The Layered Domain}
     \label{subsec:layered_domain}
@@ -101,90 +91,36 @@
     Interference is excluded by construction rather than measured, which separates the size measurement from the soundness question.
     The domain uses no randomness, so the action database, goal, initial state, and pool are determined by $d$, $m$, and $k$ alone, and a single run per configuration suffices.
 
-    \subsubsection{Enumerating the States}
-    \label{subsubsec:enumerating_states}
-    % How the state pool is obtained
-    The randomized generator produces its pool as a by-product of construction, since every state it samples or reaches while building actions joins the pool.
-    The layered domain samples nothing, so its pool must be computed instead.
-    Enumerating every subset of the literals is the only alternative that needs no starting point, and it is not a useful one.
-    Almost every subset is unreachable, since a state holding two literals from the same chain describes a configuration the actions can never produce.
-
-    The pool is therefore obtained by breadth-first search from $\{x_0, y_{\text{start}}\}$, the foot of both pools, applying every action whose preconditions hold and collecting the states reached.
-    Because each chain step deletes its predecessor, the literals within a pool are mutually exclusive, so every reachable state holds exactly one literal from the first chain and one from the second.
-    The search therefore terminates at $(d + 1)(1 + km)$ states, against $2^{(d+1)+(1+km)}$ subsets of the literal set.
-
-\section{Planner Implementation}
-\label{sec:planner_implementation}
-    % Intro to section
-    This section records the representation choices the planner rests on, built on the behavior tree semantics of Section~\ref{sec:background_bt}.
-
-    % The blackboard / world state
-    % TODO: Make sure the blackboard and how it serves as communication between nodes is in the background
-    The world state is the set of literals currently true while the tree runs, and is the runtime counterpart of a state $s$ of Section~\ref{sec:problem_formulation}.
-    It is held on the blackboard under a single registered key.
-    Actions write to that key and conditions read from it, and no node holds a reference to any other, so the blackboard is the only channel through which a change made by one node becomes visible to another.
-
-    % Conditions
-    % TODO: Make sure to discuess what a behavior and what it returns is in py_trees in the background
-    A condition is a behavior subclass holding a frozen set of literals and a protect set.
-    When the node is ticked, it returns SUCCESS if its literals are a subset of the world state and FAILURE otherwise, which realizes the test $c \subseteq s$ of Section~\ref{sec:problem_formulation}.
-
-    % Actions and the action factory
-    An action is a behavior subclass holding precondition, add, and delete literal sets.
-    When expansion selects an action, it does not instantiate the action node itself.
-    It receives a function that builds the node from the action's name and the action database, so the planner carries no dependency on any particular action implementation.
-    That function is the only seam between the planner and the environment it acts in, and it is what allows the synthetic and simulated settings to share one builder.
-
-    % Traversals
-    Traversals are implemented behind a common interface that takes the root of the tree together with the record of expanded conditions and returns the next condition to expand, or nothing once none remains.
-    The builder is parameterized by a traversal rather than containing one, so changing the order in which conditions are selected requires no change to the builder.
-    Each traversal policy a experiment uses is described in Section~\ref{subsec:settings}.
-    
-    % Goal Structure Nodes
-    \texttt{GoalSequence} and \texttt{GoalSelector} subclass the \texttt{py\_trees} sequence and selector without overriding anything, so they tick exactly as their parent classes do.
-    They exist so that the traversal and scoping routines can recognize goal structure by node type rather than by inspecting children.
-
-    % Keys and root replacement    
-    The expansion record is keyed on a condition's literals and protect set rather than on node objects, and each key maps to the set of branch scopes in which it has been expanded.
-    Two structurally identical conditions therefore share a key, and a condition is eligible for expansion only if its scope is not yet in that key's set.
-    
-    % Feature flags
-    Protection mode and subset pruning are set per experiment (Section~\ref{sec:configuration}).
+    \phantomsection\label{subsubsec:enumerating_states}
+    The layered domain samples nothing, so its pool is computed by breadth-first search from $\{x_0, y_{\text{start}}\}$, the foot of both pools, applying every action whose preconditions hold.
+    Each chain step deletes its predecessor, so every reachable state holds exactly one literal from each pool, and the search terminates at $(d + 1)(1 + km)$ states.
     
 \section{Building Fixpoint Trees}
 \label{sec:fixpoint}
-    % Why expansion must run to a fixed point
-    A direct comparison between tree architectures requires that both be expanded to the same degree.
-    For these experiments every tree, DNF or unified, is expanded completely.
-    A tree is at its fixpoint when every condition in it has been expanded within its branch scope, so that a further expansion step would leave the tree unchanged.
-    A tree built by expanding until it reaches this point is called a fixpoint tree.
-    Full expansion needs no initial state, since the fixpoint is a property of the tree and the action database alone.
-    A fixpoint tree therefore does not depend on where the robot starts.
-    
-    This is what makes a direct region of attraction measurement possible.
-    Only one tree is built per problem, and every state in the pool is scored against it to determine whether that state lies within the tree's region of attraction, Section~\ref{sec:membership}.
-    In contrast, the expansion loop of \cite{cai2021} stops once the tree can act from $s_0$.
-    That yields a tree determined by the initial state, and scoring a pool against it would measure the starting state as much as the construction.
+    % Why fixpoint trees are measured
+    The synthetic experiments build every tree, DNF or unified, as a fixpoint tree (Section~\ref{sec:equivalence}).
+    A fixpoint tree does not depend on the initial state, so the harness builds one tree per problem and scores every state in the pool against it (Section~\ref{sec:membership}).
+    A tree built from $s_0$ by Algorithm~\ref{alg:bt_expansion} would instead reflect that starting state, and scoring a pool against it would measure the state as much as the construction.
+    Building both arms to their fixed points also compares them at the same degree of expansion.
 
     \input{figures/fixpoint_tree}
 
     % The fixpoint loop
-    Building a fixpoint tree begins with the base tree structured from the goal, carrying the \texttt{GoalSequence} and \texttt{GoalSelector} nodes the goal calls for.
-    An unexpanded condition is then selected, expanded following the expansion step of \cite{cai2021}, and recorded.
-    The scoped pruning of Section~\ref{sec:pruning} is then applied.
-    The process repeats until no unexpanded condition remains.
+    The builder starts from the base tree of the goal, with the \texttt{GoalSequence} and \texttt{GoalSelector} nodes the goal calls for.
+    It selects an unexpanded condition in breadth-first order, skipping only conditions already expanded within their own branch scope, which is the scoped BFS of Table~\ref{tab:settings}.
+    It expands the selected condition by the one-step expansion of Section~\ref{subsec:one-step}, records it, and applies the scoped pruning of Section~\ref{sec:pruning}.
+    It repeats until no unexpanded condition remains.
 
-    % What unexpanded means
-    % TODO: Make sure prop 4 in background
-    The loop terminates because the keys and scopes of the expanded record (Section~\ref{sec:planner_implementation}) are both drawn from finite sets.
-    Distinct condition sets are bounded as in Proposition~4 of \cite{cai2021}, and the branch scopes are bounded by the goal structure.
-    Expansion order does not affect the resulting tree, as established in Section~\ref{subsec:order_independence}.
+    % Termination
+    The loop terminates because the keys and scopes of the expanded record (Section~\ref{sec:pruning}) are both drawn from finite sets.
+    Distinct condition sets are bounded as in Proposition~4 of \cite{cai2021}, and the goal structure bounds the branch scopes.
 
-    % Why is fixpoint used on DNF and Unified
-    The unified arm calls the fixpoint builder once on the composed goal.
-    The DNF arm calls the same builder once per disjunct and joins the results under a fallback.
-    Both arms therefore share an action model, an expansion step, and a termination condition, offering the only difference between them to be the goal structure each was built from.
+    % The two arms
+    The unified arm calls the builder once on the whole goal.
+    The DNF arm calls the same builder once per sub-goal, with a fresh expanded record for each, and joins the results under a fallback.
+    Both arms therefore share an action model, an expansion step, a traversal, and a termination condition, so the only difference between them is the goal structure each was built from.
 
+    % Online versus fixpoint
     A tree expanded online stops growing once it has a route that runs from the current state, so it can be smaller and cover fewer states than the fixpoint tree for the same goal, as the simulation run of Section~\ref{sec:results_sim} shows.
     
 \section{Measuring Region of Attraction}
@@ -192,20 +128,15 @@
     % What does membership mean? Restate problem 1` in terms of membership
     The region of attraction $R_g$ of Section~\ref{sec:problem_formulation} is measured by ticking the tree from every state of a pool and testing the goal against the resulting world state, independently of the root's status.
 
-    \subsection{Membership Guards}
-    \label{subsec:membership_guards}
-    % What guards does the membership test have
-    Before any candidate is tested, every composite in the tree is checked for memory and the run is rejected if any carries it, since the analysis of Section~\ref{sec:interference} assumes composites that re-tick every child on every tick, and a composite with memory would hide sibling interference.
-    
-    The actions of the synthetic problems complete within the tick that runs them and never report RUNNING, so the root returns only SUCCESS or FAILURE.
-    This is asserted on every tick, so an action that failed to complete within its tick would halt the run rather than be silently classified.
+    \phantomsection\label{subsec:membership_guards}
+    % Guards
+    Before testing any candidate, the harness rejects a tree containing a composite with memory, since the analysis of Section~\ref{sec:interference} assumes composites that re-tick every child on every tick.
+    It also asserts on every tick that the root returns SUCCESS or FAILURE, since synthetic actions complete within the tick that runs them, so an action that failed to complete would halt the run rather than be silently classified.
 
-    \subsection{Membership Test Procedure}
-    \label{subsec:membership_procedure}
     % The procedure of the membership test
-    Each state tested for membership is referred to as a candidate state.
-    Because actions add and remove literals as they run, each candidate is copied before it is handed to the tree, so the pool is not altered by testing against it.
-    Every node is then returned to an INVALID status, which assures that no status survives from a previously tested candidate.
+    The world state, the set of literals true while the tree runs, is held on the blackboard, where conditions read it and actions write to it.
+    A candidate state is a state tested for membership.
+    The harness copies each candidate before handing it to the tree, so that testing does not alter the pool, and resets every node to INVALID, so that no status survives from a previous candidate.
 
     The tree is ticked, and the goal is evaluated against the resulting world state by descending its \pred{AND}/\pred{OR} structure, independently of any node's status.
     The world state changes only when an action writes to the blackboard, so the resulting state is also compared with the state before the tick, and a tick that leaves it unchanged is called stationary.
@@ -229,36 +160,24 @@
     It is a tick on which the root reports SUCCESS while the goal does not hold in the resulting state.
     If the tick is not stationary, ticking continues and the candidate may still become a member, so a member can accumulate false successes, and only a stationary false success makes the candidate a violation.
 
-    \subsection{Preservation}
-    \label{sec:membership_set_comparison}
-    % What is preservation?
-    Each arm is compared with the DNF reference state by state rather than by coverage alone, since two arms covering the same number of states may cover different ones.
-    The fraction of the reference's members that an arm also covers is its preservation.
-    States the arm covers and the reference does not are counted separately, so an arm that trades coverage can be told apart from one that only loses it.
-    
-    Figures over a sample of problems are reported with 95\% bootstrap intervals, computed by drawing the problem set again with replacement 2000 times, recomputing the figure on each draw, and taking the middle 95\% of the results.
-    Whole problems are resampled rather than individual states, since the states of one problem share an action database and goal and are not independent.
-
-    \subsection{Pools and Reachability}
+    \subsection{Solvable States}
     \label{sec:membership_pools_reachability}
-    % Where does the denominator of the ROA come from
-    Running the membership test across a pool yields the subset of pooled states that lie in $R_g$.
-    Where a single figure is reported rather than a set comparison, that subset is expressed as a fraction, and two denominators are used.
+    \phantomsection\label{sec:membership_set_comparison}
+    % The pools
+    The pool of the layered domain is the complete reachable set (Section~\ref{subsubsec:enumerating_states}), while the pool of the randomized generator is a sample of the reachable states.
 
-    % The pool
-    The first is the pool itself.
-    The pool of the layered domain is the complete reachable set, computed by breadth-first search from the initial state (Section~\ref{subsubsec:enumerating_states}).
-    The pool of the randomized generator is sampled during generation, so a fraction of it describes the sampled states.
-
-    % The solvable states
+    % Solvable states
     A pooled state may admit no plan to the goal under any tree, and no construction can be expected to cover it.
-    The second denominator therefore counts only the solvable states, the pooled states from which some sequence of actions reaches $S_g$.
-    Each is identified by an exhaustive forward search from the state over the action database, independently of any tree, and the search terminates because the state space is finite.
+    A state is solvable when some sequence of actions reaches $S_g$ from it, which an exhaustive forward search over the action database decides independently of any tree.
     A state from which a tree reaches the goal must be solvable, so a member outside this set would indicate a defect in the harness, and the soundness sweep halts if one occurs.
 
-    % What each denominator is used for
-    The share of solvable states a tree covers measures its completeness on the pool, independently of any other construction.
-    Chapter~\ref{ch:results} reports the share of pooled states where every outcome of the membership test is shown, and the share of solvable states where completeness is the question.
+    % What is reported over each set
+    Chapter~\ref{ch:results} reports the outcomes of the membership test as shares of the whole pool, and the coverage of a tree as its share of the solvable states, which measures its completeness on the pool independently of any other construction.
+    Each arm is also compared with the DNF reference state by state, since two arms covering the same number of states may cover different ones, and states an arm covers that the reference does not are counted separately.
+
+    % Intervals
+    Figures over a sample of problems are reported with 95\% bootstrap intervals, computed by drawing the problem set again with replacement 2000 times, recomputing the figure on each draw, and taking the middle 95\% of the results.
+    Whole problems are resampled rather than individual states, since the states of one problem share an action database and goal and are not independent.
 
 \section{Simulation Harness}
 \label{sec:sim_harness}
@@ -380,7 +299,7 @@
     % The point of this section
     Every figure reported in Chapter~\ref{ch:results} comes from a named configuration of the procedures described in this chapter.
     Two synthetic experiments are reported, the compactness sweep and the soundness sweep, together with the simulation demonstration.
-    The two synthetic experiments share the planner implementation, the fixpoint construction, and the membership test, and differ only in the arms they compare and the settings listed here.
+    The two synthetic experiments share the planner, the fixpoint construction, and the membership test, and differ only in the arms they compare and the settings listed here.
 
     \subsection{Reference Arm}
     \label{subsec:reference_arm}
@@ -390,41 +309,30 @@
     The omission is also harmless to it, as a DNF subtree carries a single conjunctive goal condition and therefore has no sibling goals to interfere with, which is the failure protection exists to prevent.
     
     % Whether the reference covers every solvable state
-    Preservation measured against the reference equals coverage of the solvable states only if the reference itself covers every solvable state.
-    That is not assumed.
-    The solvable states of Section~\ref{sec:membership_pools_reachability} are computed independently of any tree, and Chapter~\ref{ch:results} reports how the region of the reference compares with them.
+    The reference is not assumed to cover every solvable state.
+    The solvable states are computed independently of any tree (Section~\ref{sec:membership_pools_reachability}), and Chapter~\ref{ch:results} reports how the region of the reference compares with them.
 
     % What the baseline arm leaves out
-    The DNF arm implements the construction as published and nothing beyond it.
-    Two refinements of \cite{chen2024} are absent.
-    Compaction, which factors common literals out of adjacent conditions, is omitted because it is orthogonal to the comparison being made, as the same factoring could be applied to either construction.
-    Cost-sorted assembly is omitted because the order of subtrees under the fallback changes neither the node set nor the success region of a fully expanded tree.
     The node ratio of an arm is the geometric mean over problems of the reference's node count divided by the arm's, so a value above one means the arm builds the smaller tree.
-    Compaction would reduce the node count of the reference if applied, so the node ratios reported in Chapter~\ref{ch:results} are upper bounds on the size difference between the constructions rather than exact measurements of it.
+    Compaction, which the baseline omits (Section~\ref{sec:dnf_compilation}), would reduce the node count of the reference, so the node ratios reported in Chapter~\ref{ch:results} are upper bounds on the size difference between the constructions rather than exact measurements of it.
 
     \subsection{Compactness Sweep}
     \label{subsec:construction_comparison}
     % What does this test cover?
-    The compactness sweep measures the unified construction against DNF compilation as a function of goal structure, rather than over a sample of randomly generated problems.
-    The unified arm is one tree built from the composed goal.
-    The DNF arm is one fixpoint tree per disjunct, joined under a fallback so that the sweep has a single root to tick.
-
-    Problems come from the layered domain of Section~\ref{subsec:layered_domain}.
-    One parameter varies at a time while the other two hold at their base values, with chain depth $d$ taking twelve values, branch depth $m$ five, and branch count $k$ five.
-    The base configuration appears in all three, giving twenty distinct configurations.
+    The compactness sweep measures the unified construction against DNF compilation as a function of goal structure, on problems from the layered domain of Section~\ref{subsec:layered_domain}.
+    One parameter varies at a time while the other two hold at their base values, with chain depth $d$ taking twelve values, branch depth $m$ five, and branch count $k$ five, which gives twenty distinct configurations since the base configuration appears in all three.
 
     Tree size is measured as the total node count of the fixpoint tree, the measure used by \cite{cai2021}.
     Condition counts, distinct condition counts, and expansion counts are recorded alongside it for both arms, together with the ratios between them.
     The membership buckets and false success counts are recorded as well, not as a result but as a check that the isolation held.
     % A difference in region of attraction between the two arms would indicate a defect rather than a finding.
 
-    \subsection{Soundness and Preservation Sweep}
-    \label{subsec:soundness_and_preservation_sweep}
+    \subsection{Soundness Sweep}
+    \label{subsec:soundness_sweep}
     % What does this test cover?
     The soundness sweep measures the effect of the protection modes within the unified construction.
     Each unified arm is scored against a DNF reference built from the same problem.
 
-    Four arms are compared, the unified construction with protection off, with protection against left siblings, with protection against all siblings, and the reference.
     The five membership outcomes of Section~\ref{subsec:membership_outcomes} are recorded for each arm, together with the false success count, the number of times protection rejected an action during construction, and the number of solvable states in the pool.
 
     Problems come from the randomized generator, so interference arises at whatever rate the sampler produces rather than being set.
@@ -433,7 +341,7 @@
     A flat goal is built from each nested problem by writing the shared conjunct into both disjuncts, and its unified tree is compared with the DNF reference in node count and region of attraction.
 
     \subsection{Experiment Settings}
-    \label{subsec:settings}
+    \label{tab:settings}
     % TODO: Scoped BFS define it
     \begin{tabular}{llll}
         \toprule

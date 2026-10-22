@@ -23,6 +23,7 @@
     The one configuration where the unified construction is larger is $d = 0$, with 24 nodes against 21, since there is no shared chain to duplicate and the unified tree's separate goal condition for $x_0$ and its extra goal-structure node become pure overhead.
     
     On every configuration both arms bring every state of the pool into the goal, so the comparison is between trees with the same region of attraction that differ only in size.
+    Neither arm reported a false success, and rebuilding the unified tree with left protection left its node count and region of attraction unchanged, as Section~\ref{subsec:layered_domain} predicts.
 
     \subsection{Deriving the Closed Forms}
     \label{subsec:compactness_closed_forms}
@@ -63,8 +64,7 @@
     \end{equation}
     which matches the measured node count of both arms on every configuration.
 
-    \subsection{Shape of the Curves}
-    \label{subsec:compactness_curve_shape}
+    \phantomsection\label{subsec:compactness_curve_shape}
     % Why the curves are lines
     The closed forms also account for the shape of Figure~\ref{fig:compactness_sweep}.
     The DNF count is a product of the three parameters, but that is visible only when they vary together.
@@ -74,8 +74,7 @@
     % Why the ratio levels off
     Along each axis the ratio approaches the limit of $N_{\text{DNF}} / N_{\text{unified}}$ as the swept parameter grows, which is $k(m+1)$ along $d$, $d+1$ along $m$, and $\frac{4(d+1)(m+1)-2}{2(2m+1)}$ along $k$.
     At the base configuration these ceilings are 6, 4, and 4.6.
-    Each is set by the parameters held fixed, so a ratio above any single ceiling requires more 
-    than one parameter to grow at once.
+    Each is set by the parameters held fixed, so a ratio above any single ceiling requires more than one parameter to grow at once.
 
     \subsection{Sources of Compactness}
     \label{subsec:compactness_sources}
@@ -91,19 +90,12 @@
     % TODO: Run results again for k=1
     Separate regression does not depend on the disjunction.
     With a single disjunct, $k = 1$, which lies outside the sweep because it offers no alternative, the unified tree still builds $(d+1) + (m+1)$ conditions against $(d+1)(m+1)$ for DNF.
-    The same separation is what admits sibling interference, since each child of a \texttt{GoalSequence} selects actions against its own condition alone, and Section~\ref{sec:results_interference} measures its cost when the subsystems are not independent.
-
-    \subsection{Isolation Check}
-    \label{subsec:compactness_isolation}
-    % Soundness isolation check
-    The isolation held on every configuration.
-    Neither arm reported a false success, and rebuilding the unified tree with left protection left its node count and region of attraction unchanged, as Section~\ref{subsec:layered_domain} predicts.
 
 \section{Soundness and Completeness under Interference}
 \label{sec:results_interference}
     % What question this experiment answers
     The compactness sweep excluded sibling interference by construction.
-    The soundness sweep of Section~\ref{subsec:soundness_and_preservation_sweep} admits it, and measures what interference costs the unified construction and what each protection mode recovers.
+    The soundness sweep of Section~\ref{subsec:soundness_sweep} admits it, and measures what interference costs the unified construction and what each protection mode recovers.
     Nested and deep goals are measured separately over one thousand problems each, pooling 20,801 and 20,804 states respectively.
 
     \subsection{Outcomes of the Membership Test}
@@ -144,7 +136,7 @@
     % Solvable states as the denominator
     Of the pooled states, 96.9\% on nested goals and 97.0\% on deep goals are solvable in the sense of Section~\ref{sec:membership_pools_reachability}.
     The DNF reference solves exactly these states on all two thousand problems, every solvable state and no other.
-    Its honest failures in Figure~\ref{fig:soundness_outcomes} are therefore the unsolvable states, and the share of the reference an arm preserves is the share of solvable states it solves.
+    Its honest failures in Figure~\ref{fig:soundness_outcomes} are therefore the unsolvable states, and an arm's share of the solvable states is also its share of the reference's region.
 
     % Coverage per arm
     Figure~\ref{fig:soundness_tradeoff} places each arm by its share of solvable states solved and its node ratio (Section~\ref{subsec:reference_arm}).
@@ -165,7 +157,6 @@
 
     \subsection{Size and the Trade-off}
     \label{subsec:interference_tradeoff}
-
     % Unprotected size
     Without protection the unified tree is not reliably smaller.
     Its node ratio is 0.89 on nested goals, about 12\% larger than the reference, and 1.43 on deep goals.
@@ -179,11 +170,12 @@
     % Left improves on off in both respects
     Left protection improves on the unprotected arm in both respects, building the smaller tree and solving more solvable states on both goal shapes.
     Symmetric protection is the only arm that gives up coverage for size, building the smallest trees but solving roughly half the solvable states.
+    Left protection is therefore the default of the construction and the mode used in the simulation.
 
     \subsection{Validity of the Sweep}
     \label{subsec:interference_validity}
     % Harness check
-    No member of any arm lies outside the solvable states, so every arm's region lies within the reference's and preservation measures loss alone.
+    No member of any arm lies outside the solvable states, so every arm's region lies within the reference's and an arm's coverage measures only what it loses.
     On the thousand flat goals built from the nested problems, the unified tree matched the reference in node count and region of attraction on every one, as Section~\ref{sec:equivalence} predicts.
 
     % How far the rates generalise
@@ -298,16 +290,9 @@
 
     \subsection{Guarantees under \probprime}
     \label{subsec:discussion_guarantees}
-    % Condition (ii)
-    Condition~\ref{cond:status} holds for the unified construction under left protection by Proposition~\ref{prop:left_soundness}, and no measured problem contradicted it (Section~\ref{subsec:interference_outcomes}).
-    Without protection the condition fails.
-
-    % Condition (i)
-    Condition~\ref{cond:fts} held for every member of every protected tree, which reached $S_g$ in finite time and kept reporting SUCCESS afterward (Section~\ref{subsec:interference_persistence}).
-    What remains is how many starting states each construction serves.
-
     % Visible and hidden failure
-    Read per starting state, the results separate three cases.
+    Under left protection, condition~\ref{cond:status} holds by Proposition~\ref{prop:left_soundness}, and condition~\ref{cond:fts} held for every member (Sections~\ref{subsec:interference_outcomes} and~\ref{subsec:interference_persistence}).
+    What separates the constructions is how they fail from the states they do not serve.
     From a solvable starting state, DNF compilation produced a tree satisfying both conditions of \probprime on every problem measured.
     The unified construction under left protection did so from most solvable states, and from the remainder its tree reports FAILURE, so the failure is visible to whatever relies on the tree.
     The unprotected construction instead reports SUCCESS from many of the states it cannot solve, so its failure is hidden, which makes it the more damaging of the two.
@@ -317,23 +302,16 @@
     Soundness, which the inherited results do not reach, is restored by left protection.
     Completeness is restored only in part, and the remaining subsections examine where.
 
-    \subsection{Separate Regression}
-    \label{subsec:discussion_separate_regression}
+    \subsection{Independent and Interacting Conjuncts}
+    \label{subsec:discussion_conjuncts}
     % One mechanism, two effects
     Both experiments follow from the same property of the construction.
     Under a \texttt{GoalSequence}, each child is regressed on its own, and an action is selected for a condition by testing that condition alone (Section~\ref{sec:unified_construction}).
     Regressing each conjunct on its own is what keeps the tree small, since no condition combines the literals of two conjuncts.
     Selecting actions against one conjunct at a time is what admits interference, since an action chosen for one conjunct is tested against nothing another conjunct needs.
-
-    % What protection can and cannot recover
-    Protection restores soundness by extending that test to the literals of earlier siblings, but it cannot restore the plans it forbids.
-    Section~\ref{sec:interference} argued that protection buys soundness at the cost of completeness, and the 8.2\% and 18.2\% of solvable states missed under left protection are the measured size of that cost.
-    Against the unprotected arm, however, left protection is more complete rather than less.
-    The states the unprotected arm loses to violations are lost to it in any case, and removing the actions that cause them recovers more states than the forbidden plans cost.
+    Protection removes the interference by forbidding plans that break and re-achieve a sibling's literal, and the 8.2\% and 18.2\% of solvable states missed under left protection are the measured size of the completeness cost argued in Section~\ref{sec:interference}.
     Whether the construction pays off therefore depends on whether the conjuncts of a goal can be regressed independently.
-
-    \subsection{Independent and Interacting Conjuncts}
-    \label{subsec:discussion_conjuncts}
+    
     % Flat goals
     On flat goals there is nothing to factor.
     The two constructions build the same tree with the same region of attraction (Section~\ref{sec:equivalence}), which held on every flat goal measured (Section~\ref{subsec:interference_validity}).
@@ -361,16 +339,3 @@
     The choice between the constructions therefore turns on whether an action available to one sibling of a \texttt{GoalSequence} can delete a literal another sibling needs.
     Where none can, as in the simulation task, the unified tree is expected to lose nothing and is the smaller of the two, and where some can, DNF compilation is the construction that solves every solvable state.
     Deciding this from the action database before either tree is built is left to future work (Chapter~\ref{ch:conclusion}).
-
-    \subsection{Defaults of the Construction}
-    \label{subsec:discussion_defaults}
-    % Left protection
-    Protection against left siblings is adopted as the default.
-    It satisfies condition~\ref{cond:status}, solves the largest share of solvable states of any sound unified arm, and builds a smaller tree than the reference on both goal shapes.
-    Against the unprotected arm it builds the smaller tree and solves more solvable states, so it improves on no protection in every respect measured (Section~\ref{subsec:interference_tradeoff}).
-
-    % Why not symmetric
-    Symmetric protection is not adopted.
-    The proof of Proposition~\ref{prop:left_soundness} needs only the actions beneath later siblings to be restricted, since an action that deletes a literal a later sibling needs runs before that sibling is ticked, which then achieves the literal again or fails.
-    The further deletions symmetric protection forbids therefore prevent no violation, and they account for the solvable states it misses beyond those left protection misses.
-    Symmetric protection also guards against siblings undoing each other indefinitely, but no cycle occurred under left protection.
