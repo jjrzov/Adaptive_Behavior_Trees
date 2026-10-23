@@ -95,10 +95,10 @@ FIELDS = ["problem_id", "arm", "protect_mode", "pool_size",
           "branch_actions", "branch_conflict"]
 
 
-def drawNestedGoal(states_db):
-    # AND(shared, OR(r1, r2)) from two path states. Factoring the shared
-    # literals out is what makes the unified arm expand them once, and is also
-    # what creates the sibling the OR branch can break.
+def drawPair(states_db):
+    # Shared first step of both goal shapes. Two distinct path states, a random
+    # subset of each, and the literals the subsets share become the shared
+    # conjunct. Draws in the same order as before, so nested goals are unchanged.
     s1 = set(random.choice(states_db))
     s2 = set(random.choice(states_db))
 
@@ -111,44 +111,53 @@ def drawNestedGoal(states_db):
     r1, r2 = d1 - shared, d2 - shared
 
     if not shared or not r1 or not r2:
-        return None         # nothing to factor, or one OR operand is empty
+        return None         # nothing to factor, or a remainder is empty
+
+    return shared, r1, r2
+
+
+def splitHalves(literals):
+    # Shuffle a remainder and split it in half, one half per disjunction
+    ordered = sorted(literals)
+    random.shuffle(ordered)
+    cut = len(ordered) // 2
+    return set(ordered[:cut]), set(ordered[cut:])
+
+
+def drawNestedGoal(states_db):
+    # AND(shared, OR(r1, r2)). Factoring the shared literals out is what makes
+    # the unified arm expand them once, and is also what creates the sibling
+    # the OR branch can break.
+    pair = drawPair(states_db)
+    if pair is None:
+        return None
+
+    shared, r1, r2 = pair
 
     return {
         "goal": AND(*sorted(shared), OR(AND(*sorted(r1)), AND(*sorted(r2)))),
         "shared": shared,
         "operands": [(r1, r2)],
-        "disjuncts": [d1, d2],
+        "disjuncts": [shared | r1, shared | r2],
         "r1": r1, "r2": r2,
     }
 
 
 def drawDeepGoal(states_db):
-    # AND(shared, OR(A1, A2), OR(B1, B2)). DNF must enumerate four disjuncts.
-    s1 = set(random.choice(states_db))
-    s2 = set(random.choice(states_db))
-
-    if s1 == s2:
+    # AND(shared, OR(A1, A2), OR(B1, B2)). Same first step as a nested goal,
+    # then each remainder is split in half, one half to each disjunction.
+    # DNF must enumerate four disjuncts.
+    pair = drawPair(states_db)
+    if pair is None:
         return None
 
-    shared = getRandomSubset(s1 & s2)
-    if not shared:
-        return None
+    shared, r1, r2 = pair
 
-    d1 = getRandomSubset(s1) - shared
-    d2 = getRandomSubset(s2) - shared
-    if len(d1) < 2 or len(d2) < 2:
-        return None
+    if len(r1) < 2 or len(r2) < 2:
+        return None         # a remainder too small to give both ORs an operand
 
-    l1, l2 = sorted(d1), sorted(d2)
-    random.shuffle(l1)
-    random.shuffle(l2)
-
-    c1, c2 = len(l1) // 2, len(l2) // 2
-    A1, B1 = set(l1[:c1]), set(l1[c1:])
-    A2, B2 = set(l2[:c2]), set(l2[c2:])
-
-    if not (A1 and B1 and A2 and B2):
-        return None
+    A1, B1 = splitHalves(r1)
+    A2, B2 = splitHalves(r2)
 
     return {
         "goal": AND(*sorted(shared),
