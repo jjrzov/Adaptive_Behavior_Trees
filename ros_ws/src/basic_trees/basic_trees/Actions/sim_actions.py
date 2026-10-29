@@ -11,6 +11,7 @@ SCAN_YAW = 2 * math.pi      # One full rotation in place
 SCAN_ALLOWANCE = 30         # Seconds before the spin is abandoned
 LOAD_SECONDS = 5.0          # Dwell time for loading
 UNLOAD_SECONDS = 5.0
+DOOR_SECONDS = 3.0          # Seconds to wait at a door for closing / opening door
 
 
 class SimActionFactory:
@@ -38,6 +39,8 @@ class SimActionFactory:
             "move_A" : self._make_nav_action("move_A", "A"),
             "move_B" : self._make_nav_action("move_B", "B"),
             "move_C" : self._make_nav_action("move_C", "C"),
+            "open_door_C": self._make_behavior_action("open_door_C", self.wait_client,
+                                          lambda: waitGoal(DOOR_SECONDS)),
         }
 
 

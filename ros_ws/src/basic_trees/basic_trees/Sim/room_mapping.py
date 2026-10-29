@@ -90,25 +90,6 @@ class CostMapping():
         return math.inf
 
 
-    def measureCosts(self):
-        # Find the cost of moving between rooms
-
-        # Wait for Nav2 Action client to setup
-        if not self.nav_client.wait_for_server(timeout_sec=15.0):
-            raise RuntimeError("FAILED TO START NAV2 ACTION CLIENT")
-
-        # Loop through all combinations of rooms        
-        for a, b in combinations(self.pose_map.keys(), 2):  
-            # Do permutations instead of combinations of a directed graph is desired
-            
-            length = self._measure(self.pose_map[a]["goal"], self.pose_map[b]["goal"])
-            self.edges[(a, b)] = length
-            self.edges[(b, a)] = length      # symmetric
-
-        for (a, b), length in self.edges.items():
-            self.node.get_logger().info(f"cost {a} -> {b}: {length:.2f} m")
-
-
     def getRoomCost(self, current, dest):
         # Return the cost from the current room to the destination room
         if current == dest:

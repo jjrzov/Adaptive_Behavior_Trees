@@ -46,6 +46,7 @@ class NavAction(py_trees.behaviour.Behaviour):
         self.goal_handle = None
         self.result = None
         self.result_future = None
+        self.send_future = None     # Set in initialise; terminate may run before that
         self.reached_at = None      # Clock time at which Nav2 reported success
 
 
@@ -133,3 +134,11 @@ class NavAction(py_trees.behaviour.Behaviour):
 
         if interrupted and driving:
             self.goal_handle.cancel_goal_async()
+
+        if interrupted and self.goal_handle is None and self.send_future is not None:
+            # Halted before Nav2 accepted the goal: cancel it once it is accepted
+            def cancelOnAccept(future):
+                handle = future.result()
+                if handle.accepted:
+                    handle.cancel_goal_async()
+            self.send_future.add_done_callback(cancelOnAccept)
