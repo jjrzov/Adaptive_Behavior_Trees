@@ -14,6 +14,11 @@ of the membership test. Shares are pooled over all problems, so each bar is
 soundness_tradeoff.pdf plots each arm's share of solvable states solved
 against its node ratio. Its denominator is the solvable states only, the
 pooled states from which any plan reaches the goal.
+
+With --slides both figures are written instead as transparent PNGs sized for
+a 16:9 slide, with the outcome colours of the presentation's trial flowchart:
+
+    python soundness_plots.py --nested ... --deep ... --slides --out slides/
 '''
 import argparse
 import csv
@@ -86,6 +91,71 @@ REF_COLUMNS = {"Honest failure": "ref_failure", "Violation": "ref_violations",
 
 LABEL_MIN = 0.07        # Only print a share inside a segment at least this wide
 
+# Arms on the coverage figure: (arm, label, colour, marker)
+TRADEOFF_ARMS = [("unified", "Off", "#eb6834", "o"),
+                 ("protect_l", "Left", "#2a78d6", "s"),
+                 ("protect_s", "Symmetric", "#1baf7a", "D")]
+
+BOOTSTRAP = 2000        # Resamples of problems for the 95% intervals
+
+# Text and mark sizes. The thesis values are the defaults; --slides swaps in
+# larger ones so the figure reads from the back of a room.
+STYLE = {"bar_text": 8, "bar_text_narrow": 8, "bar_edge": 0.8, "note": 8.5, "ms": 5.5, "mew": 0.6,
+         "elw": 0.9, "star": 9, "ref_lw": 0.7, "note_offset": 7}
+
+# A 16:9 slide is 10 x 5.625 in, so a point on the figure is a point on the slide
+SLIDE_FIGSIZE = (9.4, 3.9)
+SLIDE_DPI = 300
+
+
+def useSlideStyle():
+    global OUTCOMES, TRADEOFF_ARMS, BARS
+
+    # Sans text to match the deck, larger type and marks, no LaTeX dependency
+    plt.rcParams.update({
+        "text.usetex": False,
+        "font.family": "sans-serif",
+        "font.sans-serif": ["Arial", "Helvetica", "DejaVu Sans"],
+        "mathtext.fontset": "dejavusans",
+        "axes.formatter.use_mathtext": False,
+        "font.size": 16,
+        "axes.titlesize": 17,
+        "axes.labelsize": 16,
+        "xtick.labelsize": 14,
+        "ytick.labelsize": 15,
+        "legend.fontsize": 15,
+        "axes.linewidth": 1.2,
+        "xtick.major.width": 1.2,
+        "ytick.major.width": 1.2,
+        "xtick.major.size": 5,
+        "ytick.major.size": 5,
+        "grid.linewidth": 1.0,
+        "savefig.transparent": True,
+    })
+    STYLE.update({"bar_text": 14, "bar_text_narrow": 12, "bar_edge": 1.5, "note": 15, "ms": 12, "mew": 1.2,
+                  "elw": 2.0, "star": 20, "ref_lw": 1.4, "note_offset": 10})
+
+    # Same colours as the trial flowchart: member green, violation red, honest
+    # failure grey. Cycle never gets a label at its width, so it only needs to
+    # stand apart from its neighbours.
+    OUTCOMES = [("Member",         "#2e7d32", "white"),
+                ("Honest failure", "#c9c8c2", INK),
+                ("Violation",      "#d0412a", "white"),
+                ("Cycle",          "#f0b429", INK)]
+
+    # Short arm names, matching the trade-off figure, to give the bars more width
+    BARS = [("dnf", "DNF"), ("unified", "Off"), ("protect_l", "Left"),
+            ("protect_s", "Symmetric")]
+
+    # Off keeps the violation red, since violations are what it adds
+    TRADEOFF_ARMS = [("unified", "Off", "#d0412a", "o"),
+                     ("protect_l", "Left", "#2d5d9f", "s"),
+                     ("protect_s", "Symmetric", "#7b5ea7", "D")]
+
+
+def percentLabel(text):
+    return text.replace("%", r"\%") if plt.rcParams["text.usetex"] else text
+
 
 def loadShares(path):
     rows = list(csv.DictReader(open(path)))
@@ -129,11 +199,12 @@ def drawPanel(ax, shares, title):
                 continue
 
             ax.barh(row, width, left=left, height=0.62, color=colour,
-                    edgecolor="white", linewidth=0.8)
+                    edgecolor="white", linewidth=STYLE["bar_edge"])
 
             if width >= LABEL_MIN:
+                size = STYLE["bar_text"] if width >= 0.15 else STYLE["bar_text_narrow"]
                 ax.text(left + width / 2, row, f"{100 * width:.1f}",
-                        ha="center", va="center", fontsize=8, color=text_colour)
+                        ha="center", va="center", fontsize=size, color=text_colour)
 
             left += width
 
@@ -141,11 +212,16 @@ def drawPanel(ax, shares, title):
     ax.set_xlim(0, 1)
     ax.set_xticks([0, 0.25, 0.5, 0.75, 1.0])
     ax.set_xticklabels(["0", "25", "50", "75", "100"])
-    ax.set_xlabel(r"Share of pooled states (\%)" if plt.rcParams["text.usetex"]
-                  else "Share of pooled states (%)")
+    ax.set_xlabel(percentLabel("Share of pooled states (%)"))
     ax.set_title(title, color=INK)
     ax.tick_params(axis="y", length=0)
     ax.spines["left"].set_visible(False)
+
+
+def outcomeLegend(fig, **kwargs):
+    handles = [Patch(facecolor=c, edgecolor="none", label=l) for l, c, _ in OUTCOMES]
+    fig.legend(handles=handles, ncol=len(OUTCOMES), frameon=False,
+               handlelength=1.2, columnspacing=1.4, **kwargs)
 
 
 def outcomeFigure(nested_path, deep_path, out_path):
@@ -161,21 +237,31 @@ def outcomeFigure(nested_path, deep_path, out_path):
     ax[0].set_yticks(range(len(BARS)))
     ax[0].set_yticklabels([name for _, name in BARS])
 
-    handles = [Patch(facecolor=c, edgecolor="none", label=l) for l, c, _ in OUTCOMES]
-    fig.legend(handles=handles, loc="upper center", ncol=len(OUTCOMES),
-               frameon=False, bbox_to_anchor=(0.58, 1.0), handlelength=1.2,
-               columnspacing=1.4)
+    outcomeLegend(fig, loc="upper center", bbox_to_anchor=(0.58, 1.0))
 
     fig.savefig(out_path)
     plt.close(fig)
 
 
-# Arms on the coverage figure: (arm, label, colour, marker)
-TRADEOFF_ARMS = [("unified", "Off", "#eb6834", "o"),
-                 ("protect_l", "Left", "#2a78d6", "s"),
-                 ("protect_s", "Symmetric", "#1baf7a", "D")]
+def outcomeSlideFigure(nested_path, deep_path, out_path):
+    nested, n_nested, _ = loadShares(nested_path)
+    deep, n_deep, _ = loadShares(deep_path)
 
-BOOTSTRAP = 2000        # Resamples of problems for the 95% intervals
+    # Fixed margins rather than a layout engine, so this runs on matplotlib 3.5,
+    # whose constrained layout cannot make room for a figure legend
+    fig, ax = plt.subplots(1, 2, figsize=SLIDE_FIGSIZE, sharey=True)
+    fig.subplots_adjust(left=0.14, right=0.975, bottom=0.2, top=0.79, wspace=0.13)
+
+    drawPanel(ax[0], nested, f"Nested goals (n = {n_nested})")
+    drawPanel(ax[1], deep, f"Deep goals (n = {n_deep})")
+
+    ax[0].set_yticks(range(len(BARS)))
+    ax[0].set_yticklabels([name for _, name in BARS])
+
+    outcomeLegend(fig, loc="upper center", bbox_to_anchor=(0.555, 1.0))
+
+    fig.savefig(out_path, dpi=SLIDE_DPI, transparent=True)
+    plt.close(fig)
 
 
 def tradeoffStats(path, seed=0):
@@ -216,12 +302,14 @@ def tradeoffStats(path, seed=0):
 
 
 def drawTradeoffPanel(ax, stats, title, label_left=()):
+    off = STYLE["note_offset"]
+
     # Reference point: DNF covers every solvable state at its own size
-    ax.axhline(100, color=MUTED, lw=0.7, ls=":", zorder=1)
-    ax.axvline(1, color=MUTED, lw=0.7, ls=":", zorder=1)
-    ax.plot(1, 100, "*", ms=9, color=INK, zorder=3)
-    ax.annotate("DNF", (1, 100), xytext=(-7, -4), textcoords="offset points",
-                fontsize=8.5, color=INK, ha="right", va="top")
+    ax.axhline(100, color=MUTED, lw=STYLE["ref_lw"], ls=":", zorder=1)
+    ax.axvline(1, color=MUTED, lw=STYLE["ref_lw"], ls=":", zorder=1)
+    ax.plot(1, 100, "*", ms=STYLE["star"], color=INK, zorder=3)
+    ax.annotate("DNF", (1, 100), xytext=(-off, -0.6 * off), textcoords="offset points",
+                fontsize=STYLE["note"], color=INK, ha="right", va="top")
 
     for arm, label, colour, marker in TRADEOFF_ARMS:
         s = stats[arm]
@@ -229,12 +317,13 @@ def drawTradeoffPanel(ax, stats, title, label_left=()):
         y, (y_lo, y_hi) = 100 * s["coverage"], [100 * v for v in s["coverage_ci"]]
 
         ax.errorbar(x, y, xerr=[[x - x_lo], [x_hi - x]], yerr=[[y - y_lo], [y_hi - y]],
-                    fmt=marker, ms=5.5, color=colour, mec="white", mew=0.6,
-                    ecolor=colour, elinewidth=0.9, capsize=0, zorder=3)
+                    fmt=marker, ms=STYLE["ms"], color=colour, mec="white", mew=STYLE["mew"],
+                    ecolor=colour, elinewidth=STYLE["elw"], capsize=0, zorder=3)
 
         left = arm in label_left
-        ax.annotate(label, (x, y), xytext=(-7 if left else 7, 3), textcoords="offset points",
-                    fontsize=8.5, color=INK, ha="right" if left else "left")
+        ax.annotate(label, (x, y), xytext=(-off if left else off, 0.4 * off),
+                    textcoords="offset points", fontsize=STYLE["note"], color=INK,
+                    ha="right" if left else "left")
 
     ax.set_xscale("log")
     ax.set_xlim(0.7, 14)
@@ -256,12 +345,37 @@ def tradeoffFigure(nested_path, deep_path, out_path):
     drawTradeoffPanel(ax[0], nested, "Nested goals")
     drawTradeoffPanel(ax[1], deep, "Deep goals", label_left=("protect_s",))
 
-    ax[0].set_ylabel(r"Solvable states solved (\%)" if plt.rcParams["text.usetex"]
-                     else "Solvable states solved (%)")
+    ax[0].set_ylabel(percentLabel("Solvable states solved (%)"))
 
     fig.savefig(out_path)
     plt.close(fig)
 
+    printTradeoff(nested, deep)
+
+
+def tradeoffSlideFigure(nested_path, deep_path, out_path):
+    nested, deep = tradeoffStats(nested_path), tradeoffStats(deep_path)
+
+    # Fixed margins, as above, with one x label shared by both panels
+    fig, ax = plt.subplots(1, 2, figsize=SLIDE_FIGSIZE, sharey=True)
+    fig.subplots_adjust(left=0.095, right=0.985, bottom=0.2, top=0.9, wspace=0.06)
+
+    drawTradeoffPanel(ax[0], nested, "Nested goals")
+    drawTradeoffPanel(ax[1], deep, "Deep goals", label_left=("protect_s",))
+
+    ax[0].set_ylabel("Solvable states solved (%)")
+    for a in ax:
+        a.set_xlabel("")
+    fig.supxlabel("Node ratio (DNF/arm), geometric mean", y=0.01, va="bottom",
+                  fontsize=plt.rcParams["axes.labelsize"])
+
+    fig.savefig(out_path, dpi=SLIDE_DPI, transparent=True)
+    plt.close(fig)
+
+    printTradeoff(nested, deep)
+
+
+def printTradeoff(nested, deep):
     # Values for the text, so they are quoted from the same computation
     for shape, stats in (("nested", nested), ("deep", deep)):
         for arm, label, *_ in TRADEOFF_ARMS:
@@ -277,9 +391,18 @@ def main():
     parser.add_argument("--nested", default="soundness_nested_minimal.csv")
     parser.add_argument("--deep", default="soundness_deep_minimal.csv")
     parser.add_argument("--out", default=".")
+    parser.add_argument("--slides", action="store_true",
+                        help="write transparent slide PNGs instead of the thesis PDFs")
     args = parser.parse_args()
 
     os.makedirs(args.out, exist_ok=True)
+
+    if args.slides:
+        useSlideStyle()
+        outcomeSlideFigure(args.nested, args.deep, os.path.join(args.out, "soundness_outcomes.png"))
+        tradeoffSlideFigure(args.nested, args.deep, os.path.join(args.out, "soundness_tradeoff.png"))
+        return
+
     outcomeFigure(args.nested, args.deep, os.path.join(args.out, "soundness_outcomes.pdf"))
     tradeoffFigure(args.nested, args.deep, os.path.join(args.out, "soundness_tradeoff.pdf"))
 

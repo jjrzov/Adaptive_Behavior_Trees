@@ -25,6 +25,7 @@ setup(
     entry_points={
         'console_scripts': ['sim = basic_trees.Sim.ros_tree:main',
                             'test = basic_trees.Goals.goal_tree:main',
+                            'video = basic_trees.Sim.ros_video:main',
         ],
     },
 )
